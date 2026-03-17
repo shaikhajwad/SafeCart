@@ -24,21 +24,21 @@ const STATUS_OPTIONS = ['', 'pending', 'confirmed', 'processing', 'shipped', 'de
 
 export default function OrdersPage() {
   const { orgId } = useAuth();
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [orders, setOrders] = useState<Order[] | null>(null);
   const [statusFilter, setStatusFilter] = useState('');
 
   useEffect(() => {
-    if (!orgId) { setLoading(false); return; }
+    if (!orgId) return;
     apiFetch<Order[]>(`/api/orgs/${orgId}/orders`)
       .then(setOrders)
-      .catch(() => setOrders([]))
-      .finally(() => setLoading(false));
+      .catch(() => setOrders([]));
   }, [orgId]);
 
+  const isLoading = orgId !== null && orders === null;
+  const orderList = orders ?? [];
   const filtered = statusFilter
-    ? orders.filter((o) => o.status === statusFilter)
-    : orders;
+    ? orderList.filter((o) => o.status === statusFilter)
+    : orderList;
 
   const sorted = [...filtered].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
@@ -77,7 +77,7 @@ export default function OrdersPage() {
 
       <div className="card">
         <div className="card-body">
-          {loading ? (
+          {isLoading ? (
             <div className="text-center text-muted">Loading orders…</div>
           ) : sorted.length === 0 ? (
             <div className="empty-state">

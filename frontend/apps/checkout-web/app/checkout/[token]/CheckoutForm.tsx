@@ -20,6 +20,11 @@ interface FormState {
   consentCookies: boolean;
 }
 
+interface OrderCreatedResponse {
+  id: string;
+  accessCode?: string;
+}
+
 const INITIAL_FORM: FormState = {
   buyerName: '',
   buyerPhone: '',
@@ -125,12 +130,10 @@ export default function CheckoutForm({ token }: CheckoutFormProps) {
         throw new Error(msg);
       }
 
-      const raw = await res.json() as Record<string, unknown>;
-      const orderId = typeof raw.id === 'string' ? raw.id : '';
-      const accessCode = typeof raw.accessCode === 'string' ? raw.accessCode : '';
-      if (!orderId) throw new Error('Invalid response from server.');
-      const qs = accessCode ? `?access_code=${encodeURIComponent(accessCode)}` : '';
-      router.push(`/orders/${orderId}${qs}`);
+      const order = await res.json() as OrderCreatedResponse;
+      if (!order.id) throw new Error('Invalid response from server.');
+      const qs = order.accessCode ? `?access_code=${encodeURIComponent(order.accessCode)}` : '';
+      router.push(`/orders/${order.id}${qs}`);
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
       setSubmitting(false);

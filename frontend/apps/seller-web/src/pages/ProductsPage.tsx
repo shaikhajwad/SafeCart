@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { apiFetch } from '../lib/api';
 import type { Product } from '../types';
@@ -33,16 +33,16 @@ export default function ProductsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
-  function loadProducts() {
+  const loadProducts = useCallback(() => {
     if (!orgId) return;
     setLoading(true);
     apiFetch<Product[]>(`/api/orgs/${orgId}/products`)
       .then(setProducts)
       .catch(() => setProducts([]))
       .finally(() => setLoading(false));
-  }
+  }, [orgId]);
 
-  useEffect(() => { loadProducts(); }, [orgId]);
+  useEffect(() => { loadProducts(); }, [loadProducts]);
 
   function openAdd() {
     setForm(emptyForm);

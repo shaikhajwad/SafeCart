@@ -197,7 +197,6 @@ export default async function OrderPage({
             {STATUS_STEPS.map((step, idx) => {
               const done = currentStepIdx >= 0 && idx < currentStepIdx;
               const active = idx === currentStepIdx;
-              const pending = currentStepIdx < 0 || idx > currentStepIdx;
               return (
                 <li key={step} className="flex items-center gap-3">
                   <div

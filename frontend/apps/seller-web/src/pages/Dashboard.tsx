@@ -22,26 +22,23 @@ function StatusBadge({ status }: { status: string }) {
 
 export default function Dashboard() {
   const { user, org, orgId } = useAuth();
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [orders, setOrders] = useState<Order[] | null>(null);
 
   useEffect(() => {
-    if (!orgId) {
-      setLoading(false);
-      return;
-    }
+    if (!orgId) return;
     apiFetch<Order[]>(`/api/orgs/${orgId}/orders`)
       .then(setOrders)
-      .catch(() => setOrders([]))
-      .finally(() => setLoading(false));
+      .catch(() => setOrders([]));
   }, [orgId]);
 
-  const totalOrders = orders.length;
-  const pendingOrders = orders.filter((o) => o.status === 'pending').length;
-  const completedOrders = orders.filter(
+  const isLoading = orgId !== null && orders === null;
+  const orderList = orders ?? [];
+  const totalOrders = orderList.length;
+  const pendingOrders = orderList.filter((o) => o.status === 'pending').length;
+  const completedOrders = orderList.filter(
     (o) => o.status === 'completed' || o.status === 'delivered',
   ).length;
-  const recentOrders = [...orders]
+  const recentOrders = [...orderList]
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     .slice(0, 5);
 
@@ -67,7 +64,7 @@ export default function Dashboard() {
         </div>
         <div className="stat-card stat-card-info">
           <div className="stat-value">
-            {formatBDT(orders.reduce((s, o) => s + o.totalPaisa, 0))}
+            {formatBDT(orderList.reduce((s, o) => s + o.totalPaisa, 0))}
           </div>
           <div className="stat-label">Total Revenue</div>
         </div>
@@ -90,7 +87,7 @@ export default function Dashboard() {
           <h2 className="card-title">Recent Orders</h2>
         </div>
         <div className="card-body">
-          {loading ? (
+          {isLoading ? (
             <div className="text-center text-muted">Loading orders…</div>
           ) : recentOrders.length === 0 ? (
             <div className="empty-state">

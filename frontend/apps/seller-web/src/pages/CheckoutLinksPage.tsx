@@ -24,8 +24,7 @@ function StatusBadge({ status }: { status: string }) {
 export default function CheckoutLinksPage() {
   const { orgId } = useAuth();
   const [sessions, setSessions] = useState<CheckoutSession[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [products, setProducts] = useState<Product[] | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
     productId: '',
@@ -38,14 +37,10 @@ export default function CheckoutLinksPage() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!orgId) {
-      setLoading(false);
-      return;
-    }
+    if (!orgId) return;
     apiFetch<Product[]>(`/api/orgs/${orgId}/products`)
       .then(setProducts)
-      .catch(() => setProducts([]))
-      .finally(() => setLoading(false));
+      .catch(() => setProducts([]));
   }, [orgId]);
 
   async function handleCreate(e: React.FormEvent) {
@@ -125,13 +120,13 @@ export default function CheckoutLinksPage() {
                   disabled={saving}
                 >
                   <option value="">Select a product…</option>
-                  {products.map((p) => (
+                  {(products ?? []).map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.name} — {formatBDT(p.pricePaisa)}
                     </option>
                   ))}
                 </select>
-                {products.length === 0 && (
+                {(products ?? []).length === 0 && (
                   <div className="form-hint">No products found. Add products first.</div>
                 )}
               </div>
@@ -192,7 +187,7 @@ export default function CheckoutLinksPage() {
 
       <div className="card">
         <div className="card-body">
-          {loading ? (
+          {orgId !== null && products === null ? (
             <div className="text-center text-muted">Loading…</div>
           ) : sessions.length === 0 ? (
             <div className="empty-state">
@@ -215,7 +210,7 @@ export default function CheckoutLinksPage() {
               </thead>
               <tbody>
                 {sessions.map((s) => {
-                  const product = products.find((p) => p.id === s.productId);
+                  const product = (products ?? []).find((p) => p.id === s.productId);
                   const url = `${APP_BASE_URL}/checkout/${s.token}`;
                   return (
                     <tr key={s.id}>
