@@ -1,0 +1,28 @@
+{
+  "name": "safecart",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "scripts": {
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "test:integration": "pnpm -r test:integration",
+    "test:e2e": "pnpm -r test:e2e",
+    "dev:backend": "pnpm --filter backend dev",
+    "dev:checkout-web": "pnpm --filter checkout-web dev",
+    "dev:seller-web": "pnpm --filter seller-web dev",
+    "dev:admin-web": "pnpm --filter admin-web dev",
+    "migration:run": "pnpm --filter backend migration:run",
+    "migration:generate": "pnpm --filter backend migration:generate",
+    "migration:revert": "pnpm --filter backend migration:revert"
+  },
+  "devDependencies": {
+    "prettier": "^3.3.3",
+    "typescript": "^5.5.4"
+  }
+}
