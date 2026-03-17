@@ -1,0 +1,101 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  backend-lint-build-test:
+    name: Backend – Lint, Build & Test
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: safecart_test
+          POSTGRES_USER: safecart
+          POSTGRES_PASSWORD: safecart_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install backend dependencies
+        run: npm ci --workspace=backend
+
+      - name: Lint
+        run: npm run lint --workspace=backend
+
+      - name: Build
+        run: npm run build --workspace=backend
+
+      - name: Test
+        run: npm run test --workspace=backend
+        env:
+          DATABASE_URL: postgresql://safecart:safecart_test@localhost:5432/safecart_test
+          REDIS_URL: redis://localhost:6379
+          JWT_SECRET: ci_test_secret_key_do_not_use_in_production
+          NODE_ENV: test
+          APP_BASE_URL: http://localhost:3000
+
+  checkout-web-build:
+    name: checkout-web – Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci --workspace=frontend/apps/checkout-web
+      - run: npm run build --workspace=frontend/apps/checkout-web
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:3000
+
+  seller-web-build:
+    name: seller-web – Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci --workspace=frontend/apps/seller-web
+      - run: npm run build --workspace=frontend/apps/seller-web
+
+  admin-web-build:
+    name: admin-web – Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci --workspace=frontend/apps/admin-web
+      - run: npm run build --workspace=frontend/apps/admin-web
