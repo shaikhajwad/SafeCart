@@ -267,9 +267,9 @@ export default function PricingPage() {
           </Link>
 
           <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-gray-600">
-            <a href="/#how-it-works" className="hover:text-indigo-600 transition-colors">How It Works</a>
-            <a href="/#for-buyers" className="hover:text-indigo-600 transition-colors">For Buyers</a>
-            <a href="/#for-sellers" className="hover:text-indigo-600 transition-colors">For Sellers</a>
+            <Link href="/#how-it-works" className="hover:text-indigo-600 transition-colors">How It Works</Link>
+            <Link href="/#for-buyers" className="hover:text-indigo-600 transition-colors">For Buyers</Link>
+            <Link href="/#for-sellers" className="hover:text-indigo-600 transition-colors">For Sellers</Link>
             <Link href="/pricing" className="text-indigo-600 font-semibold">Pricing</Link>
           </nav>
 
@@ -504,9 +504,9 @@ export default function PricingPage() {
               <div>
                 <p className="text-white font-semibold mb-3">Product</p>
                 <ul className="space-y-2">
-                  <li><a href="/#how-it-works" className="hover:text-white transition-colors">How It Works</a></li>
-                  <li><a href="/#for-buyers" className="hover:text-white transition-colors">For Buyers</a></li>
-                  <li><a href="/#for-sellers" className="hover:text-white transition-colors">For Sellers</a></li>
+                  <li><Link href="/#how-it-works" className="hover:text-white transition-colors">How It Works</Link></li>
+                  <li><Link href="/#for-buyers" className="hover:text-white transition-colors">For Buyers</Link></li>
+                  <li><Link href="/#for-sellers" className="hover:text-white transition-colors">For Sellers</Link></li>
                   <li><Link href="/pricing" className="hover:text-white transition-colors">Pricing</Link></li>
                 </ul>
               </div>
