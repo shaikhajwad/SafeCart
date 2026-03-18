@@ -26,8 +26,7 @@ export class CheckoutController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Create a checkout session link (seller)' })
   create(@Body() dto: CreateCheckoutSessionDto, @CurrentUser() user: AuthUser) {
-    // orgId comes from JWT claims if role allows; here we derive from body
-    return this.checkoutService.create(dto.productId, dto);
+    return this.checkoutService.create(dto, user.id);
   }
 
   @Get(':token')

@@ -5,20 +5,29 @@ import { randomBytes } from 'crypto';
 import { CheckoutSession } from './entities/checkout-session.entity';
 import { CreateCheckoutSessionDto } from './dto/create-checkout-session.dto';
 import { CatalogService } from '../catalog/catalog.service';
+import { OrgMember } from '../orgs/entities/org-member.entity';
 
 @Injectable()
 export class CheckoutService {
   constructor(
     @InjectRepository(CheckoutSession)
     private sessionRepo: Repository<CheckoutSession>,
+    @InjectRepository(OrgMember)
+    private memberRepo: Repository<OrgMember>,
     private catalogService: CatalogService,
   ) {}
 
-  async create(orgId: string, dto: CreateCheckoutSessionDto): Promise<CheckoutSession> {
+  async create(dto: CreateCheckoutSessionDto, requesterUserId: string): Promise<CheckoutSession> {
     const product = await this.catalogService.findById(dto.productId);
-    if (product.orgId !== orgId) {
+
+    const member = await this.memberRepo.findOne({
+      where: { orgId: product.orgId, userId: requesterUserId, status: 'active' },
+    });
+    if (!member) {
       throw new BadRequestException({ error: { code: 'INVALID_PRODUCT', message: 'Product not found in org' } });
     }
+
+    const orgId = product.orgId;
 
     let lockedPricePaisa = Number(product.basePricePaisa);
     if (dto.variantId) {
