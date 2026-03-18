@@ -28,7 +28,10 @@ interface CheckoutSession {
 }
 
 async function getCheckoutSession(token: string): Promise<CheckoutSession | null> {
-  const apiBase = process.env.NEXT_PUBLIC_API_URL ?? '';
+  const apiBase =
+    process.env.API_BASE_URL ??
+    process.env.NEXT_PUBLIC_API_URL ??
+    'http://backend:3000';
   try {
     const res = await fetch(`${apiBase}/api/checkout-sessions/${token}`, {
       cache: 'no-store',
