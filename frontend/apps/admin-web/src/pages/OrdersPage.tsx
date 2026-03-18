@@ -1,125 +1,143 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { apiFetch } from '../lib/api';
-import type { Order } from '../types';
+
+interface Order {
+  id: string;
+  orderRef: string;
+  buyerName: string;
+  buyerPhone: string;
+  totalPaisa: number;
+  status: string;
+  createdAt: string;
+}
 
 function formatPaisa(paisa: number): string {
   return `৳${(paisa / 100).toLocaleString('en-BD', { minimumFractionDigits: 2 })}`;
 }
 
+function StatusBadge({ status }: { status: string }) {
+  const cls =
+    status === 'completed' || status === 'delivered'
+      ? 'badge badge-success'
+      : status === 'cancelled' || status === 'failed'
+        ? 'badge badge-danger'
+        : status === 'pending'
+          ? 'badge badge-warning'
+          : 'badge badge-info';
+  return <span className={cls}>{status}</span>;
+}
+
 export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-  const [holdLoading, setHoldLoading] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function load() {
-      try {
-        const data = await apiFetch<Order[]>('/api/admin/orders');
-        setOrders(data);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load orders');
-      } finally {
-        setLoading(false);
-      }
-    }
-    void load();
+  const loadOrders = useCallback(() => {
+    setLoading(true);
+    apiFetch<Order[]>('/api/admin/orders')
+      .then(setOrders)
+      .catch(() => setOrders([]))
+      .finally(() => setLoading(false));
   }, []);
 
-  async function handleHold(id: string) {
-    setHoldLoading(id);
-    try {
-      await apiFetch(`/api/admin/orders/${id}/hold`, { method: 'POST' });
-      setOrders((prev) => prev.map((o) => o.id === id ? { ...o, status: 'CANCELLED' } : o));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to hold order');
-    } finally {
-      setHoldLoading(null);
-    }
-  }
+  useEffect(() => { loadOrders(); }, [loadOrders]);
 
-  const statuses = Array.from(new Set(orders.map((o) => o.status)));
-  const filtered = statusFilter ? orders.filter((o) => o.status === statusFilter) : orders;
+  const filtered = orders.filter((o) => {
+    const q = search.toLowerCase();
+    const matchesSearch =
+      !q ||
+      o.orderRef.toLowerCase().includes(q) ||
+      o.buyerName.toLowerCase().includes(q) ||
+      o.buyerPhone.includes(q);
+    const matchesStatus = !statusFilter || o.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
 
-  if (loading) return <div className="page-loading"><div className="spinner" /></div>;
+  const statuses = [...new Set(orders.map((o) => o.status))];
 
   return (
     <div className="page">
       <div className="page-header">
-        <h1 className="page-title">All Orders</h1>
-        <p className="page-subtitle">Platform-wide order management</p>
-      </div>
-
-      {error && <div className="alert alert-danger">{error}</div>}
-
-      <div className="filter-bar">
-        <select
-          className="form-select"
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-        >
-          <option value="">All Statuses</option>
-          {statuses.map((s) => (
-            <option key={s} value={s}>{s}</option>
-          ))}
-        </select>
-        <span className="filter-count">{filtered.length} orders</span>
-      </div>
-
-      {filtered.length === 0 && !error && (
-        <div className="empty-state">
-          <div className="empty-icon">📋</div>
-          <p>No orders found</p>
+        <div>
+          <h1 className="page-title">Orders</h1>
+          <p className="page-subtitle">
+            {filtered.length} of {orders.length} order{orders.length !== 1 ? 's' : ''}
+          </p>
         </div>
-      )}
+        <div className="page-controls">
+          <div className="search-bar">
+            <input
+              type="text"
+              placeholder="Search by ref, name, phone…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+            <svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+          </div>
+          <select
+            className="form-select"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            style={{ width: 'auto', minWidth: 140 }}
+          >
+            <option value="">All Statuses</option>
+            {statuses.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+          <button
+            className={`btn-icon${loading ? ' spinning' : ''}`}
+            onClick={loadOrders}
+            title="Refresh"
+          >
+            <svg viewBox="0 0 24 24">
+              <polyline points="1 4 1 10 7 10" /><polyline points="23 20 23 14 17 14" />
+              <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15" />
+            </svg>
+          </button>
+        </div>
+      </div>
 
-      {filtered.length > 0 && (
-        <div className="card">
-          <div className="table-wrapper">
+      <div className="card">
+        <div className="table-wrap">
+          {loading ? (
+            <div className="page-loading"><div className="spinner" /></div>
+          ) : filtered.length === 0 ? (
+            <div className="empty-state">
+              <div className="empty-icon">📋</div>
+              <p>{search || statusFilter ? 'No orders match your filters.' : 'No orders yet.'}</p>
+            </div>
+          ) : (
             <table className="table">
               <thead>
                 <tr>
                   <th>Ref</th>
-                  <th>Org</th>
                   <th>Buyer</th>
                   <th>Phone</th>
-                  <th>District</th>
                   <th>Amount</th>
                   <th>Status</th>
                   <th>Date</th>
-                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((order) => (
-                  <tr key={order.id}>
-                    <td><code className="code-ref">{order.orderRef}</code></td>
-                    <td>{order.org?.name ?? order.orgId}</td>
-                    <td>{order.buyerName}</td>
-                    <td>{order.buyerPhone}</td>
-                    <td>{order.district}</td>
-                    <td>{formatPaisa(order.totalPaisa)}</td>
-                    <td><span className={`badge badge-${order.status}`}>{order.status}</span></td>
-                    <td>{new Date(order.createdAt).toLocaleDateString()}</td>
-                    <td>
-                      {order.status !== 'CANCELLED' && (
-                        <button
-                          className="btn btn-danger btn-xs"
-                          onClick={() => void handleHold(order.id)}
-                          disabled={holdLoading === order.id}
-                        >
-                          {holdLoading === order.id ? '…' : 'Hold'}
-                        </button>
-                      )}
-                    </td>
+                {filtered.map((o) => (
+                  <tr key={o.id}>
+                    <td><code className="font-mono">{o.orderRef}</code></td>
+                    <td className="font-semibold">{o.buyerName}</td>
+                    <td className="text-muted">{o.buyerPhone}</td>
+                    <td className="font-mono">{formatPaisa(o.totalPaisa)}</td>
+                    <td><StatusBadge status={o.status} /></td>
+                    <td className="text-muted">{new Date(o.createdAt).toLocaleDateString()}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }

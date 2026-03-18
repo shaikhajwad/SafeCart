@@ -26,6 +26,7 @@ export default function OrdersPage() {
   const { orgId } = useAuth();
   const [orders, setOrders] = useState<Order[] | null>(null);
   const [statusFilter, setStatusFilter] = useState('');
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     if (!orgId) return;
@@ -36,9 +37,16 @@ export default function OrdersPage() {
 
   const isLoading = orgId !== null && orders === null;
   const orderList = orders ?? [];
-  const filtered = statusFilter
-    ? orderList.filter((o) => o.status === statusFilter)
-    : orderList;
+  const filtered = orderList.filter((o) => {
+    const q = search.toLowerCase();
+    const matchesSearch =
+      !q ||
+      o.orderRef.toLowerCase().includes(q) ||
+      o.buyerName.toLowerCase().includes(q) ||
+      o.buyerPhone.includes(q);
+    const matchesStatus = !statusFilter || o.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
 
   const sorted = [...filtered].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
@@ -62,11 +70,23 @@ export default function OrdersPage() {
           <h1 className="page-title">Orders</h1>
           <p className="page-subtitle">{filtered.length} order{filtered.length !== 1 ? 's' : ''}</p>
         </div>
-        <div className="filter-bar">
+        <div className="page-controls">
+          <div className="search-bar">
+            <input
+              type="text"
+              placeholder="Search by ref, name, phone…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+            <svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+          </div>
           <select
             className="form-select"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
+            style={{ width: 'auto', minWidth: 140 }}
           >
             {STATUS_OPTIONS.map((s) => (
               <option key={s} value={s}>{s === '' ? 'All statuses' : s}</option>

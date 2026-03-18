@@ -27,6 +27,8 @@ function StatusBadge({ status }: { status: string }) {
   return <span className={cls}>{status}</span>;
 }
 
+const SHIPMENT_STATUSES = ['', 'BOOKED', 'PICKED_UP', 'IN_TRANSIT', 'OUT_FOR_DELIVERY', 'DELIVERED', 'CANCELLED'];
+
 export default function ShipmentsPage() {
   const { orgId } = useAuth();
   const [shipments, setShipments] = useState<Shipment[] | null>(null);
@@ -59,65 +61,69 @@ export default function ShipmentsPage() {
   return (
     <div className="page">
       <div className="page-header">
-        <h1>Shipments</h1>
+        <div>
+          <h1 className="page-title">Shipments</h1>
+          <p className="page-subtitle">
+            {filtered.length} of {shipmentList.length} shipment{shipmentList.length !== 1 ? 's' : ''}
+          </p>
+        </div>
         <div className="page-controls">
-          <input
-            type="text"
-            placeholder="Filter by status..."
+          <select
+            className="form-select"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="input input-sm"
-          />
+            style={{ width: 'auto', minWidth: 160 }}
+          >
+            {SHIPMENT_STATUSES.map((s) => (
+              <option key={s} value={s}>{s === '' ? 'All Statuses' : s}</option>
+            ))}
+          </select>
         </div>
       </div>
 
-      {isLoading && (
-        <div className="flex justify-center py-12">
-          <div className="loading loading-spinner loading-lg" />
+      <div className="card">
+        <div className="card-body">
+          {isLoading ? (
+            <div className="page-loading"><div className="spinner" /></div>
+          ) : sorted.length === 0 ? (
+            <div className="empty-state">
+              <div className="empty-icon">📭</div>
+              <p>{statusFilter ? `No ${statusFilter} shipments.` : 'No shipments yet.'}</p>
+            </div>
+          ) : (
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Order Ref</th>
+                  <th>Courier</th>
+                  <th>Tracking #</th>
+                  <th>Status</th>
+                  <th>Est. Delivery</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {sorted.map((s) => (
+                  <tr key={s.id}>
+                    <td className="font-semibold">{s.orderRef}</td>
+                    <td>{s.courier}</td>
+                    <td className="font-mono text-muted">{s.trackingNumber || '—'}</td>
+                    <td><StatusBadge status={s.status} /></td>
+                    <td className="text-muted">
+                      {s.estimatedDeliveryAt ? new Date(s.estimatedDeliveryAt).toLocaleDateString() : '—'}
+                    </td>
+                    <td>
+                      <Link to={`/shipments/${s.id}`} className="btn btn-sm btn-ghost">
+                        View →
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
-      )}
-
-      {!isLoading && shipmentList.length === 0 && (
-        <div className="empty-state">
-          <div className="empty-icon">📭</div>
-          <p>No shipments yet</p>
-        </div>
-      )}
-
-      {!isLoading && sorted.length > 0 && (
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Order Ref</th>
-              <th>Courier</th>
-              <th>Tracking #</th>
-              <th>Status</th>
-              <th>Est. Delivery</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {sorted.map((s) => (
-              <tr key={s.id}>
-                <td className="font-medium">{s.orderRef}</td>
-                <td className="capitalize">{s.courier}</td>
-                <td>{s.trackingNumber || '-'}</td>
-                <td>
-                  <StatusBadge status={s.status} />
-                </td>
-                <td className="text-sm text-gray-500">
-                  {s.estimatedDeliveryAt ? new Date(s.estimatedDeliveryAt).toLocaleDateString() : '-'}
-                </td>
-                <td>
-                  <Link to={`/shipments/${s.id}`} className="link link-primary link-sm">
-                    View
-                  </Link>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+      </div>
     </div>
   );
 }

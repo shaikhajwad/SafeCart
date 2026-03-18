@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { apiFetch } from '../lib/api';
+import ConfirmDialog from '../components/ConfirmDialog';
 import type { Product } from '../types';
 
 function formatBDT(paisa: number): string {
@@ -32,6 +33,8 @@ export default function ProductsPage() {
   const [form, setForm] = useState<ProductFormData>(emptyForm);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [search, setSearch] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
   const loadProducts = useCallback(() => {
     if (!orgId) return;
@@ -107,13 +110,25 @@ export default function ProductsPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('Delete this product?')) return;
+    setDeleteTarget(null);
     try {
       await apiFetch(`/api/products/${id}`, { method: 'DELETE' });
       setProducts((prev) => prev.filter((p) => p.id !== id));
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Failed to delete product');
     }
+  }
+
+  const filtered = products.filter((p) => {
+    const q = search.toLowerCase();
+    return !q || p.name.toLowerCase().includes(q) || (p.sku ?? '').toLowerCase().includes(q);
+  });
+
+  function stockBadge(stock: number | null | undefined) {
+    if (stock == null) return <span className="stock-badge stock-badge-in">Unlimited</span>;
+    if (stock === 0) return <span className="stock-badge stock-badge-out">Out of Stock</span>;
+    if (stock <= 5) return <span className="stock-badge stock-badge-low">Low ({stock})</span>;
+    return <span className="stock-badge stock-badge-in">{stock} in stock</span>;
   }
 
   if (!orgId) {
@@ -132,11 +147,24 @@ export default function ProductsPage() {
       <div className="page-header">
         <div>
           <h1 className="page-title">Products</h1>
-          <p className="page-subtitle">{products.length} product{products.length !== 1 ? 's' : ''}</p>
+          <p className="page-subtitle">{filtered.length} of {products.length} product{products.length !== 1 ? 's' : ''}</p>
         </div>
-        <button className="btn btn-primary" onClick={openAdd}>
-          + Add Product
-        </button>
+        <div className="page-controls">
+          <div className="search-bar">
+            <input
+              type="text"
+              placeholder="Search by name or SKU…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+            <svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+          </div>
+          <button className="btn btn-primary" onClick={openAdd}>
+            + Add Product
+          </button>
+        </div>
       </div>
 
       {showForm && (
@@ -242,14 +270,16 @@ export default function ProductsPage() {
       <div className="card">
         <div className="card-body">
           {loading ? (
-            <div className="text-center text-muted">Loading products…</div>
-          ) : products.length === 0 ? (
+            <div className="page-loading"><div className="spinner" /></div>
+          ) : filtered.length === 0 ? (
             <div className="empty-state">
               <div className="empty-icon">📦</div>
-              <p>No products yet. Add your first product to start selling.</p>
-              <button className="btn btn-primary" onClick={openAdd}>
-                + Add Product
-              </button>
+              <p>{search ? 'No products match your search.' : 'No products yet. Add your first product to start selling.'}</p>
+              {!search && (
+                <button className="btn btn-primary" onClick={openAdd}>
+                  + Add Product
+                </button>
+              )}
             </div>
           ) : (
             <table className="table">
@@ -263,7 +293,7 @@ export default function ProductsPage() {
                 </tr>
               </thead>
               <tbody>
-                {products.map((p) => (
+                {filtered.map((p) => (
                   <tr key={p.id}>
                     <td>
                       <div className="product-name">{p.name}</div>
@@ -273,13 +303,13 @@ export default function ProductsPage() {
                     </td>
                     <td className="font-mono">{formatBDT(p.pricePaisa)}</td>
                     <td className="text-muted">{p.sku ?? '—'}</td>
-                    <td>{p.stock != null ? p.stock : '∞'}</td>
+                    <td>{stockBadge(p.stock)}</td>
                     <td>
                       <div className="action-btns">
                         <button className="btn btn-sm btn-secondary" onClick={() => openEdit(p)}>
                           Edit
                         </button>
-                        <button className="btn btn-sm btn-danger" onClick={() => handleDelete(p.id)}>
+                        <button className="btn btn-sm btn-danger" onClick={() => setDeleteTarget(p.id)}>
                           Delete
                         </button>
                       </div>
@@ -291,6 +321,16 @@ export default function ProductsPage() {
           )}
         </div>
       </div>
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        title="Delete Product"
+        message="Are you sure you want to delete this product? This action cannot be undone."
+        confirmLabel="Delete"
+        danger
+        onConfirm={() => deleteTarget && handleDelete(deleteTarget)}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

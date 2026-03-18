@@ -41,6 +41,10 @@ export default function CheckoutLinksPage() {
     apiFetch<Product[]>(`/api/orgs/${orgId}/products`)
       .then(setProducts)
       .catch(() => setProducts([]));
+    // Load existing checkout sessions
+    apiFetch<CheckoutSession[]>(`/api/checkout-sessions/orgs/${orgId}/checkout-sessions`)
+      .then(setSessions)
+      .catch(() => setSessions([]));
   }, [orgId]);
 
   async function handleCreate(e: React.FormEvent) {

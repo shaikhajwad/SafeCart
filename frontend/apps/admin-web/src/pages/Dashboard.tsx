@@ -63,6 +63,20 @@ export default function Dashboard() {
             </div>
           </div>
 
+          <div className="quick-actions">
+            <button className="btn btn-primary" onClick={() => navigate('/verifications')}>
+              Review Verifications
+            </button>
+            <button className="btn btn-secondary" onClick={() => navigate('/orders')}>
+              View All Orders
+            </button>
+            <button className="btn btn-secondary" onClick={() => navigate('/users')}>
+              Manage Users
+            </button>
+            <button className="btn btn-secondary" onClick={() => navigate('/disputes')}>
+              Manage Disputes
+            </button>
+          </div>
           {stats.recentOrders && stats.recentOrders.length > 0 && (
             <div className="card mt-6">
               <div className="card-header">

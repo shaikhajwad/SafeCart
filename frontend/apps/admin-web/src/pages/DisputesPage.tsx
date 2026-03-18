@@ -15,6 +15,7 @@ export default function DisputesPage() {
   const [notes, setNotes] = useState('');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [actionError, setActionError] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
 
   async function load() {
     setLoading(true);
@@ -52,24 +53,52 @@ export default function DisputesPage() {
 
   if (loading) return <div className="page-loading"><div className="spinner" /></div>;
 
+  const statuses = [...new Set(disputes.map((d) => d.status))];
+  const filtered = disputes.filter((d) => !statusFilter || d.status === statusFilter);
+
   return (
     <div className="page">
       <div className="page-header">
-        <h1 className="page-title">Disputes</h1>
-        <p className="page-subtitle">Review and resolve platform disputes</p>
+        <div>
+          <h1 className="page-title">Disputes</h1>
+          <p className="page-subtitle">{filtered.length} of {disputes.length} dispute{disputes.length !== 1 ? 's' : ''}</p>
+        </div>
+        <div className="page-controls">
+          <select
+            className="form-select"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            style={{ width: 'auto', minWidth: 140 }}
+          >
+            <option value="">All Statuses</option>
+            {statuses.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+          <button
+            className={`btn-icon${loading ? ' spinning' : ''}`}
+            onClick={() => void load()}
+            title="Refresh"
+          >
+            <svg viewBox="0 0 24 24">
+              <polyline points="1 4 1 10 7 10" /><polyline points="23 20 23 14 17 14" />
+              <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15" />
+            </svg>
+          </button>
+        </div>
       </div>
 
       {error && <div className="alert alert-danger">{error}</div>}
 
-      {disputes.length === 0 && !error && (
+      {filtered.length === 0 && !error && (
         <div className="empty-state">
           <div className="empty-icon">✓</div>
-          <p>No disputes found</p>
+          <p>{statusFilter ? 'No disputes match this filter.' : 'No disputes found'}</p>
         </div>
       )}
 
       <div className="card-list">
-        {disputes.map((dispute) => (
+        {filtered.map((dispute) => (
           <div key={dispute.id} className="card dispute-card">
             <div className="card-body">
               <div className="dispute-header">
