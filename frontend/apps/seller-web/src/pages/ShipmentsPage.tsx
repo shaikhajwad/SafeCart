@@ -15,10 +15,6 @@ interface Shipment {
   createdAt: string;
 }
 
-function formatBDT(paisa: number): string {
-  return 'BDT ' + (paisa / 100).toLocaleString('en-BD', { minimumFractionDigits: 2 });
-}
-
 function StatusBadge({ status }: { status: string }) {
   const cls =
     status === 'DELIVERED'

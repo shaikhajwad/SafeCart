@@ -31,8 +31,8 @@ export class DisputesController {
   @ApiQuery({ name: 'access_code', required: false })
   openDisputePublic(
     @Param('id') orderId: string,
-    @Query('access_code') accessCode?: string,
-    @Body() dto?: CreateDisputeDto,
+    @Query('access_code') accessCode: string,
+    @Body() dto: CreateDisputeDto,
   ) {
     return this.disputesService.openDisputePublic(orderId, accessCode, dto);
   }

@@ -216,7 +216,7 @@ export class PaymentsService {
   }
 
   async getPaymentStatus(orderId: string, accessCode?: string, provider?: string) {
-    const order = await this.ordersService.findByIdWithAccess(orderId, accessCode);
+    const orderData = await this.ordersService.findByIdWithAccess(orderId, accessCode);
     
     const query = this.intentRepo.createQueryBuilder('intent').where('intent.orderId = :orderId', { orderId });
     if (provider) {
@@ -227,7 +227,7 @@ export class PaymentsService {
     
     return {
       orderId,
-      orderStatus: order.status,
+      orderStatus: orderData.status,
       paymentIntents: intents.map(intent => ({
         id: intent.id,
         provider: intent.provider,

@@ -43,7 +43,7 @@ services:
       NODE_ENV: development
       APP_BASE_URL: http://localhost:3000
       # Set this to a real phone number (E.164) to bootstrap the first admin user
-      ADMIN_PHONE: "+10000000000"
+      ADMIN_PHONE: "+88013175540501"
       # Where checkout-web is publicly accessible (used for order tracking links in emails)
       CHECKOUT_WEB_BASE_URL: http://localhost:3001
       # Comma-separated list of allowed CORS origins
