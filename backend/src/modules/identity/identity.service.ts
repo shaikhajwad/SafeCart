@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { ConfigService } from '@nestjs/config';
 import { OtpService } from './otp.service';
 import { TokenService } from './token.service';
 import { User } from './entities/user.entity';
@@ -20,6 +21,7 @@ export class IdentityService {
     @InjectRepository(User) private userRepo: Repository<User>,
     private otpService: OtpService,
     private tokenService: TokenService,
+    private configService: ConfigService,
   ) {}
 
   async sendOtp(dto: SendOtpDto): Promise<{ message: string; retryAfterSeconds?: number }> {
@@ -56,11 +58,21 @@ export class IdentityService {
       });
     }
 
+    const adminPhone = this.configService.get<string>('ADMIN_PHONE');
+    const isAdminPhone = !!adminPhone && dto.phone === adminPhone;
+
     let user = await this.userRepo.findOne({ where: { phoneE164: dto.phone } });
     const isNewUser = !user;
 
     if (!user) {
-      user = this.userRepo.create({ phoneE164: dto.phone, role: 'buyer' });
+      user = this.userRepo.create({
+        phoneE164: dto.phone,
+        role: isAdminPhone ? 'admin' : 'buyer',
+      });
+      await this.userRepo.save(user);
+    } else if (isAdminPhone && user.role !== 'admin') {
+      // Upgrade existing user to admin if they match the ADMIN_PHONE env var
+      user.role = 'admin';
       await this.userRepo.save(user);
     }
 

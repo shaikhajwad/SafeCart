@@ -15,9 +15,9 @@ export default function PayButton({ orderId, accessCode }: PayButtonProps) {
     setLoading(true);
     setError('');
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL ?? '';
+      // Use relative URL — Next.js rewrites /api/* to the backend (works both locally and in Docker)
       const res = await fetch(
-        `${apiBase}/api/orders/${orderId}/payments/initiate/buyer?access_code=${encodeURIComponent(accessCode)}`,
+        `/api/orders/${orderId}/payments/initiate/buyer?access_code=${encodeURIComponent(accessCode)}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

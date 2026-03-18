@@ -64,7 +64,7 @@ export default function OrderTrackPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const url = `/api/proxy/orders/${params.id}/track${accessCode ? `?access_code=${accessCode}` : ''}`;
+    const url = `/api/orders/${params.id}/track${accessCode ? `?access_code=${accessCode}` : ''}`;
     fetch(url)
       .then((r) => r.json())
       .then((data) => { setOrder(data); setLoading(false); })

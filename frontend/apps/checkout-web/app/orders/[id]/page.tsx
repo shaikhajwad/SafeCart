@@ -96,7 +96,9 @@ function formatDate(iso: string): string {
 }
 
 async function getOrder(id: string, accessCode: string | null): Promise<Order | null> {
-  const apiBase = process.env.NEXT_PUBLIC_API_URL ?? '';
+  // Use API_BASE_URL for server-side fetches (container-to-container in Docker).
+  // Fall back to NEXT_PUBLIC_API_URL or empty string for local dev.
+  const apiBase = process.env.API_BASE_URL ?? process.env.NEXT_PUBLIC_API_URL ?? '';
   const qs = accessCode ? `?access_code=${encodeURIComponent(accessCode)}` : '';
   try {
     const res = await fetch(`${apiBase}/api/orders/${id}${qs}`, {
