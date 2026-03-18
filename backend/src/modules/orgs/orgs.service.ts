@@ -3,6 +3,7 @@ import {
   NotFoundException,
   ForbiddenException,
   ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -28,7 +29,14 @@ export class OrgsService {
   }
 
   async create(dto: CreateOrgDto, userId: string): Promise<Org> {
-    const slug = dto.slug ?? this.slugify(dto.displayName);
+    const displayName = dto.displayName ?? dto.name;
+    if (!displayName) {
+      throw new BadRequestException({
+        error: { code: 'INVALID_ORG_PAYLOAD', message: 'displayName (or name) is required' },
+      });
+    }
+
+    const slug = dto.slug ?? this.slugify(displayName);
 
     const existing = await this.orgRepo.findOne({ where: { slug } });
     if (existing) {
@@ -37,10 +45,11 @@ export class OrgsService {
 
     const org = this.orgRepo.create({
       slug,
-      displayName: dto.displayName,
+      displayName,
       description: dto.description,
-      supportPhone: dto.supportPhone,
+      supportPhone: dto.supportPhone ?? dto.contactPhone,
       supportEmail: dto.supportEmail,
+      websiteUrl: dto.websiteUrl ?? dto.website,
     });
     await this.orgRepo.save(org);
 
@@ -74,7 +83,15 @@ export class OrgsService {
   async update(orgId: string, dto: UpdateOrgDto, userId: string): Promise<Org> {
     await this.assertOwnerOrAdmin(orgId, userId);
     const org = await this.findById(orgId);
-    Object.assign(org, dto);
+
+    const patch: Partial<Org> = {
+      ...dto,
+      displayName: dto.displayName ?? dto.name,
+      supportPhone: dto.supportPhone ?? dto.contactPhone,
+      websiteUrl: dto.websiteUrl ?? dto.website,
+    };
+
+    Object.assign(org, patch);
     return this.orgRepo.save(org);
   }
 
