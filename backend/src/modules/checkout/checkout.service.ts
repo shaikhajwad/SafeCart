@@ -64,4 +64,11 @@ export class CheckoutService {
     }
     return session;
   }
+
+  async findByOrgId(orgId: string): Promise<CheckoutSession[]> {
+    return this.sessionRepo.find({
+      where: { orgId },
+      order: { createdAt: 'DESC' },
+    });
+  }
 }

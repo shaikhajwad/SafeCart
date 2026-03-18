@@ -34,7 +34,7 @@ export class OrdersService {
       checkoutSessionId: session.id,
       buyerUserId,
       accessCode: randomBytes(4).toString('hex').toUpperCase(),
-      status: OrderStatus.DRAFT,
+      status: OrderStatus.CHECKOUT_STARTED,
       productId: session.productId,
       variantId: session.variantId,
       quantity: session.quantity,
@@ -50,6 +50,8 @@ export class OrdersService {
       thana: dto.thana,
       postalCode: dto.postalCode,
       specialInstructions: dto.specialInstructions,
+      consentTerms: dto.consentTerms,
+      consentCookies: dto.consentCookies,
     });
     return this.orderRepo.save(order);
   }

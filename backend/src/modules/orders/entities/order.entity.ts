@@ -112,6 +112,14 @@ export class Order {
   @Column({ nullable: true, name: 'special_instructions', type: 'text' })
   specialInstructions: string;
 
+  /** Buyer consent to terms and conditions */
+  @Column({ default: false, name: 'consent_terms' })
+  consentTerms: boolean;
+
+  /** Buyer consent to cookies and tracking */
+  @Column({ default: false, name: 'consent_cookies' })
+  consentCookies: boolean;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

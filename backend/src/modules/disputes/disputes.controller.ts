@@ -5,11 +5,12 @@ import {
   Patch,
   Body,
   Param,
+  Query,
   UseGuards,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { DisputesService } from './disputes.service';
 import { CreateDisputeDto } from './dto/create-dispute.dto';
 import { ResolveDisputeDto } from './dto/resolve-dispute.dto';
@@ -20,15 +21,27 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import type { AuthUser } from '../../common/decorators/current-user.decorator';
 
 @ApiTags('disputes')
-@ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @Controller('api')
 export class DisputesController {
   constructor(private readonly disputesService: DisputesService) {}
 
   @Post('orders/:id/disputes')
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Open a dispute for an order' })
+  @ApiOperation({ summary: 'Open a dispute for an order (buyer - requires access_code)' })
+  @ApiQuery({ name: 'access_code', required: false })
+  openDisputePublic(
+    @Param('id') orderId: string,
+    @Query('access_code') accessCode?: string,
+    @Body() dto?: CreateDisputeDto,
+  ) {
+    return this.disputesService.openDisputePublic(orderId, accessCode, dto);
+  }
+
+  @Post('orders/:id/disputes/authenticated')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Open a dispute for an order (authenticated user)' })
   openDispute(
     @Param('id') orderId: string,
     @Body() dto: CreateDisputeDto,
@@ -51,6 +64,8 @@ export class DisputesController {
 
   @Post('disputes/:id/evidence')
   @HttpCode(HttpStatus.CREATED)
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Upload evidence for a dispute' })
   addEvidence(
     @Param('id') id: string,
@@ -61,6 +76,8 @@ export class DisputesController {
   }
 
   @Patch('disputes/:id/resolve')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
   @Roles('admin', 'support_agent')
   @UseGuards(RolesGuard)
   @ApiOperation({ summary: 'Resolve a dispute (admin/support)' })

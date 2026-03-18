@@ -3,6 +3,7 @@ import {
   IsOptional,
   Matches,
   MaxLength,
+  IsBoolean,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -46,4 +47,12 @@ export class CreateOrderDto {
   @IsString()
   @MaxLength(500)
   specialInstructions?: string;
+
+  @ApiProperty({ description: 'Buyer consent to terms and conditions' })
+  @IsBoolean()
+  consentTerms: boolean;
+
+  @ApiProperty({ description: 'Buyer consent to cookies and tracking' })
+  @IsBoolean()
+  consentCookies: boolean;
 }

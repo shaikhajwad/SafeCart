@@ -34,4 +34,13 @@ export class CheckoutController {
   findByToken(@Param('token') token: string) {
     return this.checkoutService.findByToken(token);
   }
+
+  @Get('orgs/:orgId/checkout-sessions')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'List checkout sessions for an org (seller)' })
+  listByOrg(@Param('orgId') orgId: string, @CurrentUser() user: AuthUser) {
+    // TODO: Verify user is member of orgId
+    return this.checkoutService.findByOrgId(orgId);
+  }
 }

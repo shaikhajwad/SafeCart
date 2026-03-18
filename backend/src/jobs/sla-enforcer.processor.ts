@@ -3,6 +3,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, LessThan } from 'typeorm';
 import { Order, OrderStatus } from '../modules/orders/entities/order.entity';
+import { NotificationsService } from '../modules/notifications/notifications.service';
 
 /** 48-hour courier handover SLA enforcer */
 @Injectable()
@@ -12,6 +13,7 @@ export class SlaEnforcerProcessor {
 
   constructor(
     @InjectRepository(Order) private orderRepo: Repository<Order>,
+    private notificationsService: NotificationsService,
   ) {}
 
   @Cron(CronExpression.EVERY_HOUR)
@@ -28,11 +30,32 @@ export class SlaEnforcerProcessor {
       },
     });
 
+    this.logger.log(`Found ${breachedOrders.length} orders with SLA breaches`);
+
     for (const order of breachedOrders) {
-      this.logger.warn(
-        `SLA BREACH: Order ${order.orderRef} has been in PAID status for >48h without shipment booking`,
-      );
-      // In production: send alert to seller, notify admin, potentially auto-escalate
+      try {
+        const hours = Math.floor((Date.now() - new Date(order.updatedAt).getTime()) / 3600000);
+        const message = `Order ${order.orderRef} has been in PAID status for ${hours}+ hours without shipment booking`;
+
+        // Send alert to seller
+        try {
+          await this.notificationsService.sendAlert(order.orgId, {
+            type: 'SLA_BREACH',
+            title: 'Shipment SLA Breach',
+            message,
+            orderId: order.id,
+            orderRef: order.orderRef,
+          });
+          this.logger.log(`Sent SLA breach alert for order ${order.orderRef} to seller`);
+        } catch (err) {
+          this.logger.error(`Failed to send SLA breach alert for order ${order.orderRef}`, err);
+        }
+
+        // Log for admin review
+        this.logger.warn(`SLA BREACH: ${message}`);
+      } catch (err) {
+        this.logger.error(`Error processing SLA breach for order ${order.id}`, err);
+      }
     }
   }
 }

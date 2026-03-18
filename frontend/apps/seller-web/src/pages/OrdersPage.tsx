@@ -10,17 +10,17 @@ function formatBDT(paisa: number): string {
 
 function StatusBadge({ status }: { status: string }) {
   const cls =
-    status === 'completed' || status === 'delivered'
+    status === 'COMPLETED' || status === 'DELIVERED'
       ? 'badge badge-success'
-      : status === 'cancelled' || status === 'failed'
+      : status === 'CANCELLED' || status === 'REFUNDED'
         ? 'badge badge-danger'
-        : status === 'pending'
+        : status === 'PAYMENT_PENDING' || status === 'DRAFT' || status === 'DISPUTE_OPEN'
           ? 'badge badge-warning'
           : 'badge badge-info';
   return <span className={cls}>{status}</span>;
 }
 
-const STATUS_OPTIONS = ['', 'pending', 'confirmed', 'processing', 'shipped', 'delivered', 'completed', 'cancelled'];
+const STATUS_OPTIONS = ['', 'DRAFT', 'CHECKOUT_STARTED', 'PAYMENT_PENDING', 'PAID', 'SHIPMENT_BOOKED', 'IN_TRANSIT', 'DELIVERED', 'COMPLETED', 'CANCELLED', 'DISPUTE_OPEN', 'REFUNDED'];
 
 export default function OrdersPage() {
   const { orgId } = useAuth();

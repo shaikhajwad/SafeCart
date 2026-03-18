@@ -29,6 +29,21 @@ export class DisputesService {
     return dispute;
   }
 
+  async openDisputePublic(orderId: string, accessCode: string, dto: CreateDisputeDto): Promise<Dispute> {
+    // Validate order exists and access_code is correct
+    await this.ordersService.findByIdWithAccess(orderId, accessCode);
+
+    const dispute = this.disputeRepo.create({
+      orderId,
+      reason: dto.reason,
+      status: 'open',
+    });
+    await this.disputeRepo.save(dispute);
+
+    await this.ordersService.advanceStatus(orderId, OrderStatus.DISPUTE_OPEN);
+    return dispute;
+  }
+
   async listForOrder(orderId: string): Promise<Dispute[]> {
     return this.disputeRepo.find({ where: { orderId }, relations: ['evidence'] });
   }

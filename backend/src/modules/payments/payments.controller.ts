@@ -83,4 +83,16 @@ export class PaymentsController {
   listPayments(@Param('id') id: string) {
     return this.paymentsService.listByOrder(id);
   }
+
+  @Get('orders/:id/payments/status')
+  @ApiOperation({ summary: 'Get payment status for an order (public with access_code)' })
+  @ApiQuery({ name: 'access_code', required: false })
+  @ApiQuery({ name: 'provider', required: false })
+  async getPaymentStatus(
+    @Param('id') id: string,
+    @Query('access_code') accessCode?: string,
+    @Query('provider') provider?: string,
+  ) {
+    return this.paymentsService.getPaymentStatus(id, accessCode, provider);
+  }
 }

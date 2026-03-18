@@ -29,13 +29,65 @@ export class LogisticsService {
 
   async getQuotes(orderId: string): Promise<{ provider: string; chargePaisa: number; estimatedDays: number }[]> {
     const order = await this.ordersService.findById(orderId);
-    // Return static quotes; in production, call each courier's rate API
-    return [
-      { provider: 'pathao', chargePaisa: 8000, estimatedDays: 2 },
-      { provider: 'paperfly', chargePaisa: 9000, estimatedDays: 3 },
-      { provider: 'redx', chargePaisa: 7500, estimatedDays: 2 },
-      { provider: 'ecourier', chargePaisa: 10000, estimatedDays: 3 },
-    ];
+    const quotes: { provider: string; chargePaisa: number; estimatedDays: number }[] = [];
+
+    // Query each courier for live rates
+    try {
+      try {
+        const pathaoQuote = await this.pathaoAdapter.getRate(order.district);
+        quotes.push({
+          provider: 'pathao',
+          chargePaisa: pathaoQuote.chargePaisa,
+          estimatedDays: pathaoQuote.estimatedDays,
+        });
+      } catch (err) {
+        // Fallback to default rate
+        quotes.push({ provider: 'pathao', chargePaisa: 8000, estimatedDays: 2 });
+      }
+
+      try {
+        const paperflyQuote = await this.paperflyAdapter.getRate(order.district);
+        quotes.push({
+          provider: 'paperfly',
+          chargePaisa: paperflyQuote.chargePaisa,
+          estimatedDays: paperflyQuote.estimatedDays,
+        });
+      } catch (err) {
+        quotes.push({ provider: 'paperfly', chargePaisa: 9000, estimatedDays: 3 });
+      }
+
+      try {
+        const redxQuote = await this.redxAdapter.getRate(order.district);
+        quotes.push({
+          provider: 'redx',
+          chargePaisa: redxQuote.chargePaisa,
+          estimatedDays: redxQuote.estimatedDays,
+        });
+      } catch (err) {
+        quotes.push({ provider: 'redx', chargePaisa: 7500, estimatedDays: 2 });
+      }
+
+      try {
+        const ecourierQuote = await this.ecourierAdapter.getRate(order.district);
+        quotes.push({
+          provider: 'ecourier',
+          chargePaisa: ecourierQuote.chargePaisa,
+          estimatedDays: ecourierQuote.estimatedDays,
+        });
+      } catch (err) {
+        quotes.push({ provider: 'ecourier', chargePaisa: 10000, estimatedDays: 3 });
+      }
+    } catch (err) {
+      // If all queries fail, return fallback quotes
+      return [
+        { provider: 'pathao', chargePaisa: 8000, estimatedDays: 2 },
+        { provider: 'paperfly', chargePaisa: 9000, estimatedDays: 3 },
+        { provider: 'redx', chargePaisa: 7500, estimatedDays: 2 },
+        { provider: 'ecourier', chargePaisa: 10000, estimatedDays: 3 },
+      ];
+    }
+
+    return quotes;
   }
 
   async bookShipment(orderId: string, dto: BookShipmentDto): Promise<Shipment> {

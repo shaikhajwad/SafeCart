@@ -76,6 +76,10 @@ export class PaymentsService {
     intent.status = 'processing';
     await this.intentRepo.save(intent);
 
+    const order = await this.ordersService.findById(orderId);
+    if (order.status === OrderStatus.DRAFT) {
+      await this.ordersService.advanceStatus(orderId, OrderStatus.CHECKOUT_STARTED);
+    }
     await this.ordersService.advanceStatus(orderId, OrderStatus.PAYMENT_PENDING);
 
     const result = { payUrl, paymentIntentId: intent.id };
@@ -209,5 +213,30 @@ export class PaymentsService {
 
   async listByOrder(orderId: string): Promise<PaymentIntent[]> {
     return this.intentRepo.find({ where: { orderId }, order: { createdAt: 'DESC' } });
+  }
+
+  async getPaymentStatus(orderId: string, accessCode?: string, provider?: string) {
+    const order = await this.ordersService.findByIdWithAccess(orderId, accessCode);
+    
+    const query = this.intentRepo.createQueryBuilder('intent').where('intent.orderId = :orderId', { orderId });
+    if (provider) {
+      query.andWhere('intent.provider = :provider', { provider });
+    }
+    
+    const intents = await query.orderBy('intent.createdAt', 'DESC').getMany();
+    
+    return {
+      orderId,
+      orderStatus: order.status,
+      paymentIntents: intents.map(intent => ({
+        id: intent.id,
+        provider: intent.provider,
+        status: intent.status,
+        amountPaisa: intent.amountPaisa,
+        payUrl: intent.payUrl,
+        createdAt: intent.createdAt,
+        updatedAt: intent.updatedAt,
+      })),
+    };
   }
 }

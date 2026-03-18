@@ -57,7 +57,7 @@ const STATUS_LABELS: Record<string, string> = {
 export default function OrderTrackPage() {
   const params = useParams<{ id: string }>();
   const searchParams = useSearchParams();
-  const accessCode = searchParams.get('code');
+  const accessCode = searchParams.get('access_code');
 
   const [order, setOrder] = useState<OrderTracking | null>(null);
   const [loading, setLoading] = useState(true);

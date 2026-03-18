@@ -9,6 +9,8 @@ import ProductsPage from './pages/ProductsPage';
 import CheckoutLinksPage from './pages/CheckoutLinksPage';
 import OrdersPage from './pages/OrdersPage';
 import OrderDetailPage from './pages/OrderDetailPage';
+import ShipmentsPage from './pages/ShipmentsPage';
+import ShipmentDetailPage from './pages/ShipmentDetailPage';
 import ProfilePage from './pages/ProfilePage';
 import { useAuth } from './context/AuthContext';
 
@@ -40,6 +42,8 @@ function AppRoutes() {
                   <Route path="/checkout-links" element={<CheckoutLinksPage />} />
                   <Route path="/orders" element={<OrdersPage />} />
                   <Route path="/orders/:id" element={<OrderDetailPage />} />
+                  <Route path="/shipments" element={<ShipmentsPage />} />
+                  <Route path="/shipments/:id" element={<ShipmentDetailPage />} />
                   <Route path="/profile" element={<ProfilePage />} />
                 </Routes>
               </Layout>
