@@ -3,6 +3,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { ScheduleModule } from '@nestjs/schedule';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
 import appConfig from './config/app.config';
 import databaseConfig from './config/database.config';
 import redisConfig from './config/redis.config';
@@ -37,6 +39,7 @@ import Redis from 'ioredis';
 
 @Global()
 @Module({
+  controllers: [AppController],
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
@@ -73,6 +76,7 @@ import Redis from 'ioredis';
     AuditModule,
   ],
   providers: [
+    AppService,
     {
       provide: 'REDIS_CLIENT',
       useFactory: (configService: ConfigService) => {
