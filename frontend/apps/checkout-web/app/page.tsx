@@ -137,6 +137,8 @@ const TRUST_STATS = [
   { value: "100%", label: "Compliant with BDCOG 2021" },
 ];
 
+const sellerDashboardUrl = process.env.NEXT_PUBLIC_SELLER_DASHBOARD_URL ?? "http://localhost:3002";
+
 /* ─── page ──────────────────────────────────────────────────────── */
 
 export default function Home() {
@@ -170,7 +172,7 @@ export default function Home() {
               Track Order
             </Link>
             <a
-              href="https://seller.safecart.com.bd"
+              href={sellerDashboardUrl}
               className="inline-flex items-center px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition-colors shadow-sm"
             >
               Start Selling →
@@ -207,7 +209,7 @@ export default function Home() {
               📦 Track My Order
             </Link>
             <a
-              href="https://seller.safecart.com.bd"
+              href={sellerDashboardUrl}
               className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-indigo-500/40 border border-white/30 text-white font-bold text-base hover:bg-indigo-500/60 transition-colors backdrop-blur-sm"
             >
               🛒 Start Selling Free →
@@ -331,7 +333,7 @@ export default function Home() {
 
           <div className="mt-10 text-center">
             <a
-              href="https://seller.safecart.com.bd"
+              href={sellerDashboardUrl}
               className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition-colors shadow-sm"
             >
               🛒 Open Your Seller Dashboard →
@@ -366,7 +368,7 @@ export default function Home() {
           </ul>
 
           <a
-            href="https://seller.safecart.com.bd"
+            href={sellerDashboardUrl}
             className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-white text-indigo-700 font-bold text-base hover:bg-indigo-50 transition-colors shadow-lg"
           >
             Get Started Free — No Subscription →
@@ -404,7 +406,7 @@ export default function Home() {
               <div>
                 <p className="text-white font-semibold mb-3">Platforms</p>
                 <ul className="space-y-2">
-                  <li><a href="https://seller.safecart.com.bd" className="hover:text-white transition-colors">Seller Dashboard</a></li>
+                  <li><a href={sellerDashboardUrl} className="hover:text-white transition-colors">Seller Dashboard</a></li>
                   <li><Link href="/login" className="hover:text-white transition-colors">Order Tracking</Link></li>
                 </ul>
               </div>
