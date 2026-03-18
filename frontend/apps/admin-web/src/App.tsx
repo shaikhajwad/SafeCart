@@ -8,9 +8,25 @@ import DisputesPage from './pages/DisputesPage';
 import Layout from './components/Layout';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
+  const { user, loading, logout } = useAuth();
   if (loading) return <div className="loading-screen"><div className="spinner" /></div>;
   if (!user) return <Navigate to="/login" replace />;
+  if (user.role !== 'admin') {
+    return (
+      <div className="login-page">
+        <div className="login-card" style={{ textAlign: 'center' }}>
+          <div className="login-logo">🔒</div>
+          <h1 className="login-title">Access Denied</h1>
+          <p className="login-subtitle" style={{ marginBottom: '20px' }}>
+            Your account does not have admin access.
+          </p>
+          <button className="btn btn-danger btn-full" onClick={logout}>
+            Sign Out
+          </button>
+        </div>
+      </div>
+    );
+  }
   return <Layout>{children}</Layout>;
 }
 

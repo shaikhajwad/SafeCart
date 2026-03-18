@@ -34,6 +34,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     return {
       id: user.id,
       phoneE164: user.phoneE164,
+      phone: user.phoneE164, // alias so clients using .phone work correctly
       email: user.email,
       role: user.role,
       sessionId: payload.sessionId,

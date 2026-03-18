@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Order } from '../orders/entities/order.entity';
 import { Dispute } from '../disputes/entities/dispute.entity';
+import { Org } from '../orgs/entities/org.entity';
 import { VerificationService } from '../verification/verification.service';
 import { OrdersService } from '../orders/orders.service';
 import { OrderStatus } from '../orders/entities/order.entity';
@@ -12,22 +13,30 @@ export class AdminService {
   constructor(
     @InjectRepository(Order) private orderRepo: Repository<Order>,
     @InjectRepository(Dispute) private disputeRepo: Repository<Dispute>,
+    @InjectRepository(Org) private orgRepo: Repository<Org>,
     private verificationService: VerificationService,
     private ordersService: OrdersService,
   ) {}
 
   async getDashboardStats() {
-    const [totalOrders, paidOrders, disputeCount] = await Promise.all([
+    const [totalOrders, disputeCount, totalOrgs, pendingCases, recentOrders] = await Promise.all([
       this.orderRepo.count(),
-      this.orderRepo.count({ where: { status: OrderStatus.PAID } }),
       this.disputeRepo.count({ where: { status: 'open' } }),
+      this.orgRepo.count(),
+      this.verificationService.listPendingCases(),
+      this.orderRepo.find({
+        order: { createdAt: 'DESC' },
+        take: 5,
+        relations: ['org'],
+      }),
     ]);
 
     return {
       totalOrders,
-      paidOrders,
       openDisputes: disputeCount,
-      timestamp: new Date(),
+      totalOrgs,
+      pendingVerifications: pendingCases.length,
+      recentOrders,
     };
   }
 

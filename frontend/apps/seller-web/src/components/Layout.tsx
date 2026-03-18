@@ -2,11 +2,11 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const navItems = [
-  { to: '/', label: '⊞ Dashboard', end: true },
-  { to: '/products', label: '📦 Products' },
-  { to: '/checkout-links', label: '🔗 Checkout Links' },
-  { to: '/orders', label: '📋 Orders' },
-  { to: '/profile', label: '🏢 Profile' },
+  { to: '/', label: 'Dashboard', icon: '⊞', end: true },
+  { to: '/products', label: 'Products', icon: '📦' },
+  { to: '/checkout-links', label: 'Checkout Links', icon: '🔗' },
+  { to: '/orders', label: 'Orders', icon: '📋' },
+  { to: '/profile', label: 'Profile', icon: '🏢' },
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {
@@ -16,10 +16,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="app-shell">
       <aside className="sidebar">
-        <div className="sidebar-logo" onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
-          <span className="logo-icon">🛒</span>
+        <div className="sidebar-logo" onClick={() => navigate('/')}>
+          <div className="logo-icon-wrap">S</div>
           <span className="logo-text">SafeCart</span>
         </div>
+
+        <p className="sidebar-section-label">Menu</p>
 
         <nav className="sidebar-nav">
           {navItems.map((item) => (
@@ -29,6 +31,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               end={item.end}
               className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}
             >
+              <span className="nav-icon">{item.icon}</span>
               {item.label}
             </NavLink>
           ))}
@@ -42,8 +45,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <div className="user-phone">{user?.phone}</div>
             </div>
           </div>
-          <button className="btn btn-ghost btn-sm" onClick={logout}>
-            Sign out
+          <button className="btn btn-ghost btn-sm btn-full" onClick={logout}>
+            ← Sign out
           </button>
         </div>
       </aside>
