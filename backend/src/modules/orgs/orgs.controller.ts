@@ -21,7 +21,7 @@ import type { AuthUser } from '../../common/decorators/current-user.decorator';
 @ApiTags('orgs')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
-@Controller('api/orgs')
+@Controller('api/v1/orgs')
 export class OrgsController {
   constructor(private readonly orgsService: OrgsService) {}
 

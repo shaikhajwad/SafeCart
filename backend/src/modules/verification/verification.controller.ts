@@ -18,7 +18,7 @@ import type { AuthUser } from '../../common/decorators/current-user.decorator';
 @ApiTags('verification')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
-@Controller('api/orgs/:orgId/verification')
+@Controller('api/v1/orgs/:orgId/verification')
 export class VerificationController {
   constructor(private readonly verificationService: VerificationService) {}
 

@@ -20,9 +20,7 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import type { AuthUser } from '../../common/decorators/current-user.decorator';
 
 @ApiTags('disputes')
-@ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
-@Controller('api')
+@Controller('api/v1')
 export class DisputesController {
   constructor(private readonly disputesService: DisputesService) {}
 

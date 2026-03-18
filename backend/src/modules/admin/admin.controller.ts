@@ -21,7 +21,7 @@ import type { AuthUser } from '../../common/decorators/current-user.decorator';
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('admin')
-@Controller('api/admin')
+@Controller('api/v1/admin')
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 

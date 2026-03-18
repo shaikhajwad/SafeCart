@@ -18,7 +18,7 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import type { AuthUser } from '../../common/decorators/current-user.decorator';
 
 @ApiTags('payments')
-@Controller('api')
+@Controller('api/v1')
 export class PaymentsController {
   constructor(private readonly paymentsService: PaymentsService) {}
 

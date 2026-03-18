@@ -16,7 +16,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 @ApiTags('audit')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
-@Controller('api')
+@Controller('api/v1')
 export class AuditController {
   constructor(private readonly auditService: AuditService) {}
 

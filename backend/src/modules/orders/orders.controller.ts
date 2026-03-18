@@ -19,7 +19,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser, AuthUser } from '../../common/decorators/current-user.decorator';
 
 @ApiTags('orders')
-@Controller('api')
+@Controller('api/v1')
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
 

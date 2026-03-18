@@ -14,7 +14,7 @@ import { BookShipmentDto } from './dto/book-shipment.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 
 @ApiTags('logistics')
-@Controller('api')
+@Controller('api/v1')
 export class LogisticsController {
   constructor(private readonly logisticsService: LogisticsService) {}
 

@@ -19,7 +19,7 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import type { AuthUser } from '../../common/decorators/current-user.decorator';
 
 @ApiTags('identity')
-@Controller('api/auth')
+@Controller('api/v1/auth')
 export class IdentityController {
   constructor(private readonly identityService: IdentityService) {}
 

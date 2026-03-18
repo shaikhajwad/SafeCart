@@ -16,7 +16,7 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import type { AuthUser } from '../../common/decorators/current-user.decorator';
 
 @ApiTags('checkout')
-@Controller('api/checkout-sessions')
+@Controller('api/v1/checkout-sessions')
 export class CheckoutController {
   constructor(private readonly checkoutService: CheckoutService) {}
 

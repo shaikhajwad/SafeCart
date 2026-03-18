@@ -21,7 +21,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 export class CatalogController {
   constructor(private readonly catalogService: CatalogService) {}
 
-  @Post('api/orgs/:orgId/products')
+  @Post('api/v1/orgs/:orgId/products')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.CREATED)
@@ -30,7 +30,7 @@ export class CatalogController {
     return this.catalogService.create(orgId, dto);
   }
 
-  @Get('api/orgs/:orgId/products')
+  @Get('api/v1/orgs/:orgId/products')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'List products for an org' })
@@ -38,13 +38,13 @@ export class CatalogController {
     return this.catalogService.findByOrg(orgId);
   }
 
-  @Get('api/products/:id')
+  @Get('api/v1/products/:id')
   @ApiOperation({ summary: 'Get a product (public)' })
   findOne(@Param('id') id: string) {
     return this.catalogService.findById(id);
   }
 
-  @Patch('api/products/:id')
+  @Patch('api/v1/products/:id')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Update a product' })
@@ -56,7 +56,7 @@ export class CatalogController {
     return this.catalogService.update(id, dto, orgId ?? '');
   }
 
-  @Delete('api/products/:id')
+  @Delete('api/v1/products/:id')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
