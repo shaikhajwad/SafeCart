@@ -4,12 +4,13 @@ import {
   Get,
   Body,
   Param,
+  Query,
   UseGuards,
   HttpCode,
   HttpStatus,
   Headers,
 } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { PaymentsService } from './payments.service';
 import { InitiatePaymentDto } from './dto/initiate-payment.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -25,13 +26,26 @@ export class PaymentsController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Initiate payment for an order' })
+  @ApiOperation({ summary: 'Initiate payment for an order (seller/admin)' })
   initiate(
     @Param('id') id: string,
     @Body() dto: InitiatePaymentDto,
     @Headers('idempotency-key') idempotencyKey?: string,
   ) {
     return this.paymentsService.initiatePayment(id, dto.provider, idempotencyKey);
+  }
+
+  @Post('orders/:id/payments/initiate/buyer')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Initiate payment for an order as a buyer (uses access_code)' })
+  @ApiQuery({ name: 'access_code', required: true, description: 'Order access code provided at checkout' })
+  initiateBuyer(
+    @Param('id') id: string,
+    @Query('access_code') accessCode: string,
+    @Body() dto: InitiatePaymentDto,
+    @Headers('idempotency-key') idempotencyKey?: string,
+  ) {
+    return this.paymentsService.initiateBuyerPayment(id, accessCode, dto.provider, idempotencyKey);
   }
 
   @Post('webhooks/payments/sslcommerz/ipn')
