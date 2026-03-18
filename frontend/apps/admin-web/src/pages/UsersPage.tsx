@@ -1,166 +1,215 @@
-import { useCallback, useEffect, useState } from 'react';
-import { apiFetch } from '../lib/api';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { apiDownload, apiFetch } from '../lib/api';
+import type { User } from '../types';
 
-interface User {
-  id: string;
-  phone: string;
-  role: string;
-  status: string;
-  createdAt: string;
-}
+const ROLE_OPTIONS = ['buyer', 'seller_owner', 'seller_staff', 'support_agent', 'admin'];
+const STATUS_OPTIONS = ['active', 'blocked', 'deleted'];
 
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
 
-  const loadUsers = useCallback(() => {
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [bulkRole, setBulkRole] = useState('');
+  const [bulkStatus, setBulkStatus] = useState('');
+  const [bulkLoading, setBulkLoading] = useState(false);
+
+  const loadUsers = useCallback(async () => {
     setLoading(true);
-    apiFetch<User[]>('/api/admin/users')
-      .then(setUsers)
-      .catch(() => setUsers([]))
-      .finally(() => setLoading(false));
-  }, []);
+    setError('');
 
-  useEffect(() => { loadUsers(); }, [loadUsers]);
+    const query = new URLSearchParams();
+    if (search.trim()) query.set('search', search.trim());
+    if (roleFilter) query.set('role', roleFilter);
+    if (statusFilter) query.set('status', statusFilter);
 
-  const filtered = users.filter((u) => {
-    const q = search.toLowerCase();
-    const matchesSearch = !q || u.phone.includes(q) || u.id.toLowerCase().includes(q);
-    const matchesRole = !roleFilter || u.role === roleFilter;
-    const matchesStatus = !statusFilter || u.status === statusFilter;
-    return matchesSearch && matchesRole && matchesStatus;
-  });
-
-  const roles = [...new Set(users.map((u) => u.role))];
-  const statuses = [...new Set(users.map((u) => u.status))];
-
-  async function handleUpdate(id: string, body: { role?: string; status?: string }) {
     try {
-      const updated = await apiFetch<User>(`/api/admin/users/${id}`, {
-        method: 'PATCH',
-        body: JSON.stringify(body),
-      });
-      setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, ...updated } : u)));
+      const data = await apiFetch<User[]>(`/api/admin/users${query.toString() ? `?${query.toString()}` : ''}`);
+      setUsers(data);
+      setSelectedIds((prev: string[]) => prev.filter((id: string) => data.some((u: User) => u.id === id)));
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to update user');
+      setError(err instanceof Error ? err.message : 'Failed to load users');
+      setUsers([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [search, roleFilter, statusFilter]);
+
+  useEffect(() => {
+    void loadUsers();
+  }, [loadUsers]);
+
+  const allVisibleSelected = useMemo(
+    () => users.length > 0 && users.every((u: User) => selectedIds.includes(u.id)),
+    [users, selectedIds],
+  );
+
+  function toggleSelection(userId: string) {
+    setSelectedIds((prev: string[]) => prev.includes(userId) ? prev.filter((id: string) => id !== userId) : [...prev, userId]);
+  }
+
+  function toggleSelectAll() {
+    if (allVisibleSelected) {
+      setSelectedIds((prev: string[]) => prev.filter((id: string) => !users.some((u: User) => u.id === id)));
+      return;
+    }
+    const visibleIds = users.map((u: User) => u.id);
+    setSelectedIds((prev: string[]) => Array.from(new Set([...prev, ...visibleIds])));
+  }
+
+  async function updateUser(userId: string, patch: { role?: string; status?: string }) {
+    try {
+      const updated = await apiFetch<User>(`/api/admin/users/${userId}`, {
+        method: 'PATCH',
+        body: JSON.stringify(patch),
+      });
+      setUsers((prev: User[]) => prev.map((u: User) => u.id === userId ? { ...u, ...updated } : u));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update user');
+    }
+  }
+
+  async function handleBulkUpdate() {
+    if (!selectedIds.length) {
+      setError('Select at least one user for bulk update');
+      return;
+    }
+    if (!bulkRole && !bulkStatus) {
+      setError('Choose bulk role or status before applying');
+      return;
+    }
+
+    setBulkLoading(true);
+    setError('');
+    try {
+      await apiFetch<{ ok: boolean; updatedCount: number }>('/api/admin/users/bulk-update', {
+        method: 'POST',
+        body: JSON.stringify({ userIds: selectedIds, role: bulkRole || undefined, status: bulkStatus || undefined }),
+      });
+      setBulkRole('');
+      setBulkStatus('');
+      await loadUsers();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to apply bulk update');
+    } finally {
+      setBulkLoading(false);
+    }
+  }
+
+  async function exportCsv() {
+    try {
+      await apiDownload('/api/admin/exports/users.csv', 'admin-users.csv');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to export users');
     }
   }
 
   return (
     <div className="page">
       <div className="page-header">
-        <div>
-          <h1 className="page-title">Users</h1>
-          <p className="page-subtitle">
-            {filtered.length} of {users.length} user{users.length !== 1 ? 's' : ''}
-          </p>
-        </div>
-        <div className="page-controls">
-          <div className="search-bar">
-            <input
-              type="text"
-              placeholder="Search by phone or ID…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-            <svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
-          </div>
-          <select
-            className="form-select"
-            value={roleFilter}
-            onChange={(e) => setRoleFilter(e.target.value)}
-            style={{ width: 'auto', minWidth: 130 }}
-          >
-            <option value="">All Roles</option>
-            {roles.map((r) => (
-              <option key={r} value={r}>{r}</option>
-            ))}
+        <h1 className="page-title">Users</h1>
+        <p className="page-subtitle">Search, filter, bulk-control users, and export directory</p>
+      </div>
+
+      {error && <div className="alert alert-danger">{error}</div>}
+
+      <div className="filter-bar" style={{ marginBottom: 12, display: 'grid', gap: 8, gridTemplateColumns: '2fr 1fr 1fr auto auto' }}>
+        <input
+          className="form-input"
+          placeholder="Search phone/email/name/id"
+          value={search}
+          onChange={(e: any) => setSearch(e.target.value)}
+        />
+        <select className="form-select" value={roleFilter} onChange={(e: any) => setRoleFilter(e.target.value)}>
+          <option value="">All roles</option>
+          {ROLE_OPTIONS.map((role) => <option key={role} value={role}>{role}</option>)}
+        </select>
+        <select className="form-select" value={statusFilter} onChange={(e: any) => setStatusFilter(e.target.value)}>
+          <option value="">All status</option>
+          {STATUS_OPTIONS.map((status) => <option key={status} value={status}>{status}</option>)}
+        </select>
+        <button className="btn btn-secondary" onClick={() => void loadUsers()} disabled={loading}>Refresh</button>
+        <button className="btn btn-ghost" onClick={() => void exportCsv()}>Export CSV</button>
+      </div>
+
+      <div className="card" style={{ marginBottom: 12 }}>
+        <div className="card-body" style={{ display: 'grid', gap: 8, gridTemplateColumns: '1fr 1fr auto', alignItems: 'end' }}>
+          <select className="form-select" value={bulkRole} onChange={(e: any) => setBulkRole(e.target.value)}>
+            <option value="">Bulk role (optional)</option>
+            {ROLE_OPTIONS.map((role) => <option key={role} value={role}>{role}</option>)}
           </select>
-          <select
-            className="form-select"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            style={{ width: 'auto', minWidth: 130 }}
-          >
-            <option value="">All Statuses</option>
-            {statuses.map((s) => (
-              <option key={s} value={s}>{s}</option>
-            ))}
+          <select className="form-select" value={bulkStatus} onChange={(e: any) => setBulkStatus(e.target.value)}>
+            <option value="">Bulk status (optional)</option>
+            {STATUS_OPTIONS.map((status) => <option key={status} value={status}>{status}</option>)}
           </select>
-          <button
-            className={`btn-icon${loading ? ' spinning' : ''}`}
-            onClick={loadUsers}
-            title="Refresh"
-          >
-            <svg viewBox="0 0 24 24">
-              <polyline points="1 4 1 10 7 10" /><polyline points="23 20 23 14 17 14" />
-              <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15" />
-            </svg>
+          <button className="btn btn-primary" disabled={!selectedIds.length || bulkLoading} onClick={() => void handleBulkUpdate()}>
+            {bulkLoading ? 'Applying...' : `Apply to ${selectedIds.length} selected`}
           </button>
         </div>
       </div>
 
       <div className="card">
-        <div className="table-wrap">
-          {loading ? (
-            <div className="page-loading"><div className="spinner" /></div>
-          ) : filtered.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-icon">👥</div>
-              <p>{search || roleFilter || statusFilter ? 'No users match your filters.' : 'No users yet.'}</p>
-            </div>
-          ) : (
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Phone</th>
-                  <th>Role</th>
-                  <th>Status</th>
-                  <th>Joined</th>
-                  <th>Actions</th>
+        <div className="table-wrapper">
+          <table className="table">
+            <thead>
+              <tr>
+                <th>
+                  <input type="checkbox" checked={allVisibleSelected} onChange={() => toggleSelectAll()} />
+                </th>
+                <th>Phone</th>
+                <th>Email</th>
+                <th>Name</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Joined</th>
+              </tr>
+            </thead>
+            <tbody>
+              {users.map((user) => (
+                <tr key={user.id}>
+                  <td>
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.includes(user.id)}
+                      onChange={() => toggleSelection(user.id)}
+                    />
+                  </td>
+                  <td>{user.phoneE164 || user.phone || '-'}</td>
+                  <td>{user.email || '-'}</td>
+                  <td>{user.fullName || '-'}</td>
+                  <td>
+                    <select
+                      className="form-select"
+                      value={user.role}
+                      onChange={(e: any) => void updateUser(user.id, { role: e.target.value })}
+                    >
+                      {ROLE_OPTIONS.map((role) => <option key={role} value={role}>{role}</option>)}
+                    </select>
+                  </td>
+                  <td>
+                    <select
+                      className="form-select"
+                      value={user.status || 'active'}
+                      onChange={(e: any) => void updateUser(user.id, { status: e.target.value })}
+                    >
+                      {STATUS_OPTIONS.map((status) => <option key={status} value={status}>{status}</option>)}
+                    </select>
+                  </td>
+                  <td>{user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '-'}</td>
                 </tr>
-              </thead>
-              <tbody>
-                {filtered.map((u) => (
-                  <tr key={u.id}>
-                    <td className="font-semibold">{u.phone}</td>
-                    <td>
-                      <select
-                        className="form-select"
-                        value={u.role}
-                        onChange={(e) => handleUpdate(u.id, { role: e.target.value })}
-                        style={{ width: 'auto', minWidth: 120, padding: '4px 30px 4px 10px', fontSize: '12px' }}
-                      >
-                        <option value="buyer">buyer</option>
-                        <option value="seller">seller</option>
-                        <option value="admin">admin</option>
-                      </select>
-                    </td>
-                    <td>
-                      <select
-                        className="form-select"
-                        value={u.status}
-                        onChange={(e) => handleUpdate(u.id, { status: e.target.value })}
-                        style={{ width: 'auto', minWidth: 120, padding: '4px 30px 4px 10px', fontSize: '12px' }}
-                      >
-                        <option value="active">active</option>
-                        <option value="blocked">blocked</option>
-                      </select>
-                    </td>
-                    <td className="text-muted">{new Date(u.createdAt).toLocaleDateString()}</td>
-                    <td>
-                      <code className="font-mono text-muted text-sm">{u.id.slice(0, 8)}</code>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+              ))}
+              {!loading && users.length === 0 && (
+                <tr>
+                  <td colSpan={7}>No users found</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

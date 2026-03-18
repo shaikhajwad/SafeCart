@@ -78,6 +78,12 @@ export interface DashboardStats {
   pendingVerifications: number;
   openDisputes: number;
   totalOrders: number;
+  activeUsers?: number;
+  blockedUsers?: number;
+  activeOrgs?: number;
+  pendingRefunds?: number;
+  heldHolds?: number;
+  releasedHolds?: number;
   recentOrders?: Order[];
 }
 

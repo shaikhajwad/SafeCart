@@ -46,6 +46,11 @@ export default function Dashboard() {
               <div className="stat-label">Total Orgs</div>
               <div className="stat-value">{stats.totalOrgs}</div>
             </div>
+            <div className="stat-card" onClick={() => navigate('/orgs')} style={{ cursor: 'pointer' }}>
+              <div className="stat-icon">✅</div>
+              <div className="stat-label">Active Orgs</div>
+              <div className="stat-value">{stats.activeOrgs ?? 0}</div>
+            </div>
             <div className="stat-card stat-card-warning" onClick={() => navigate('/verifications')} style={{ cursor: 'pointer' }}>
               <div className="stat-icon">⏳</div>
               <div className="stat-label">Pending Verifications</div>
@@ -61,6 +66,31 @@ export default function Dashboard() {
               <div className="stat-label">Total Orders</div>
               <div className="stat-value">{stats.totalOrders}</div>
             </div>
+            <div className="stat-card" onClick={() => navigate('/users')} style={{ cursor: 'pointer' }}>
+              <div className="stat-icon">👥</div>
+              <div className="stat-label">Active Users</div>
+              <div className="stat-value">{stats.activeUsers ?? 0}</div>
+            </div>
+            <div className="stat-card stat-card-danger" onClick={() => navigate('/users')} style={{ cursor: 'pointer' }}>
+              <div className="stat-icon">⛔</div>
+              <div className="stat-label">Blocked Users</div>
+              <div className="stat-value">{stats.blockedUsers ?? 0}</div>
+            </div>
+            <div className="stat-card" onClick={() => navigate('/refunds')} style={{ cursor: 'pointer' }}>
+              <div className="stat-icon">💸</div>
+              <div className="stat-label">Pending Refunds</div>
+              <div className="stat-value">{stats.pendingRefunds ?? 0}</div>
+            </div>
+            <div className="stat-card" onClick={() => navigate('/risk-holds')} style={{ cursor: 'pointer' }}>
+              <div className="stat-icon">🧊</div>
+              <div className="stat-label">Held Risk Holds</div>
+              <div className="stat-value">{stats.heldHolds ?? 0}</div>
+            </div>
+            <div className="stat-card" onClick={() => navigate('/risk-holds')} style={{ cursor: 'pointer' }}>
+              <div className="stat-icon">🔓</div>
+              <div className="stat-label">Released Holds</div>
+              <div className="stat-value">{stats.releasedHolds ?? 0}</div>
+            </div>
           </div>
 
           <div className="quick-actions">
@@ -72,6 +102,15 @@ export default function Dashboard() {
             </button>
             <button className="btn btn-secondary" onClick={() => navigate('/users')}>
               Manage Users
+            </button>
+            <button className="btn btn-secondary" onClick={() => navigate('/orgs')}>
+              Manage Orgs
+            </button>
+            <button className="btn btn-secondary" onClick={() => navigate('/refunds')}>
+              Manage Refunds
+            </button>
+            <button className="btn btn-secondary" onClick={() => navigate('/risk-holds')}>
+              Review Holds
             </button>
             <button className="btn btn-secondary" onClick={() => navigate('/disputes')}>
               Manage Disputes

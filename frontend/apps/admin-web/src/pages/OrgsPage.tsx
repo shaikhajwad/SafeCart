@@ -1,141 +1,174 @@
-import { useCallback, useEffect, useState } from 'react';
-import { apiFetch } from '../lib/api';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { apiDownload, apiFetch } from '../lib/api';
+import type { Org } from '../types';
 
-interface Org {
-  id: string;
-  name: string;
-  slug: string;
-  status: string;
-  createdAt: string;
-}
+const ORG_STATUS_OPTIONS = ['pending_verification', 'active', 'suspended', 'closed'];
 
 export default function OrgsPage() {
   const [orgs, setOrgs] = useState<Org[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [bulkStatus, setBulkStatus] = useState('');
 
-  const loadOrgs = useCallback(() => {
+  const loadOrgs = useCallback(async () => {
     setLoading(true);
-    apiFetch<Org[]>('/api/admin/orgs')
-      .then(setOrgs)
-      .catch(() => setOrgs([]))
-      .finally(() => setLoading(false));
-  }, []);
+    setError('');
 
-  useEffect(() => { loadOrgs(); }, [loadOrgs]);
+    const query = new URLSearchParams();
+    if (search.trim()) query.set('search', search.trim());
+    if (statusFilter) query.set('status', statusFilter);
 
-  const filtered = orgs.filter((o) => {
-    const q = search.toLowerCase();
-    const matchesSearch =
-      !q ||
-      o.name.toLowerCase().includes(q) ||
-      o.slug.toLowerCase().includes(q);
-    const matchesStatus = !statusFilter || o.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
-
-  const statuses = [...new Set(orgs.map((o) => o.status))];
-
-  async function handleStatusChange(id: string, status: string) {
     try {
-      const updated = await apiFetch<Org>(`/api/admin/orgs/${id}`, {
+      const data = await apiFetch<Org[]>(`/api/admin/orgs${query.toString() ? `?${query.toString()}` : ''}`);
+      setOrgs(data);
+      setSelectedIds((prev) => prev.filter((id) => data.some((o) => o.id === id)));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load organisations');
+      setOrgs([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [search, statusFilter]);
+
+  useEffect(() => {
+    void loadOrgs();
+  }, [loadOrgs]);
+
+  const allVisibleSelected = useMemo(
+    () => orgs.length > 0 && orgs.every((o) => selectedIds.includes(o.id)),
+    [orgs, selectedIds],
+  );
+
+  function toggleSelection(orgId: string) {
+    setSelectedIds((prev) => prev.includes(orgId) ? prev.filter((id) => id !== orgId) : [...prev, orgId]);
+  }
+
+  function toggleSelectAll() {
+    if (allVisibleSelected) {
+      setSelectedIds((prev) => prev.filter((id) => !orgs.some((o) => o.id === id)));
+      return;
+    }
+    const visibleIds = orgs.map((o) => o.id);
+    setSelectedIds((prev) => Array.from(new Set([...prev, ...visibleIds])));
+  }
+
+  async function updateOrgStatus(orgId: string, status: string) {
+    try {
+      const updated = await apiFetch<Org>(`/api/admin/orgs/${orgId}`, {
         method: 'PATCH',
         body: JSON.stringify({ status }),
       });
-      setOrgs((prev) => prev.map((o) => (o.id === id ? { ...o, ...updated } : o)));
+      setOrgs((prev) => prev.map((o) => o.id === orgId ? { ...o, ...updated } : o));
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to update org');
+      setError(err instanceof Error ? err.message : 'Failed to update organisation');
+    }
+  }
+
+  async function bulkUpdateStatus() {
+    if (!selectedIds.length) {
+      setError('Select at least one organisation');
+      return;
+    }
+    if (!bulkStatus) {
+      setError('Choose a status for bulk update');
+      return;
+    }
+
+    try {
+      await apiFetch<{ ok: boolean; updatedCount: number }>('/api/admin/orgs/bulk-status', {
+        method: 'POST',
+        body: JSON.stringify({ orgIds: selectedIds, status: bulkStatus }),
+      });
+      setBulkStatus('');
+      await loadOrgs();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to bulk update organisations');
+    }
+  }
+
+  async function exportCsv() {
+    try {
+      await apiDownload('/api/admin/exports/orgs.csv', 'admin-orgs.csv');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to export organisations');
     }
   }
 
   return (
     <div className="page">
       <div className="page-header">
-        <div>
-          <h1 className="page-title">Organisations</h1>
-          <p className="page-subtitle">
-            {filtered.length} of {orgs.length} organisation{orgs.length !== 1 ? 's' : ''}
-          </p>
-        </div>
-        <div className="page-controls">
-          <div className="search-bar">
-            <input
-              type="text"
-              placeholder="Search by name or slug…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-            <svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
-          </div>
-          <select
-            className="form-select"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            style={{ width: 'auto', minWidth: 140 }}
-          >
-            <option value="">All Statuses</option>
-            {statuses.map((s) => (
-              <option key={s} value={s}>{s}</option>
-            ))}
+        <h1 className="page-title">Organisations</h1>
+        <p className="page-subtitle">Lifecycle control, filtering, bulk status updates, and export</p>
+      </div>
+
+      {error && <div className="alert alert-danger">{error}</div>}
+
+      <div className="filter-bar" style={{ marginBottom: 12, display: 'grid', gap: 8, gridTemplateColumns: '2fr 1fr auto auto' }}>
+        <input
+          className="form-input"
+          placeholder="Search by name, slug, support email"
+          value={search}
+          onChange={(e: any) => setSearch(e.target.value)}
+        />
+        <select className="form-select" value={statusFilter} onChange={(e: any) => setStatusFilter(e.target.value)}>
+          <option value="">All status</option>
+          {ORG_STATUS_OPTIONS.map((status) => <option key={status} value={status}>{status}</option>)}
+        </select>
+        <button className="btn btn-secondary" onClick={() => void loadOrgs()} disabled={loading}>Refresh</button>
+        <button className="btn btn-ghost" onClick={() => void exportCsv()}>Export CSV</button>
+      </div>
+
+      <div className="card" style={{ marginBottom: 12 }}>
+        <div className="card-body" style={{ display: 'grid', gap: 8, gridTemplateColumns: '1fr auto' }}>
+          <select className="form-select" value={bulkStatus} onChange={(e: any) => setBulkStatus(e.target.value)}>
+            <option value="">Bulk status</option>
+            {ORG_STATUS_OPTIONS.map((status) => <option key={status} value={status}>{status}</option>)}
           </select>
-          <button
-            className={`btn-icon${loading ? ' spinning' : ''}`}
-            onClick={loadOrgs}
-            title="Refresh"
-          >
-            <svg viewBox="0 0 24 24">
-              <polyline points="1 4 1 10 7 10" /><polyline points="23 20 23 14 17 14" />
-              <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15" />
-            </svg>
+          <button className="btn btn-primary" onClick={() => void bulkUpdateStatus()} disabled={!selectedIds.length}>
+            Apply to {selectedIds.length} selected
           </button>
         </div>
       </div>
 
       <div className="card">
-        <div className="table-wrap">
-          {loading ? (
-            <div className="page-loading"><div className="spinner" /></div>
-          ) : filtered.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-icon">🏢</div>
-              <p>{search || statusFilter ? 'No organisations match your filters.' : 'No organisations yet.'}</p>
-            </div>
-          ) : (
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Slug</th>
-                  <th>Status</th>
-                  <th>Created</th>
+        <div className="table-wrapper">
+          <table className="table">
+            <thead>
+              <tr>
+                <th><input type="checkbox" checked={allVisibleSelected} onChange={() => toggleSelectAll()} /></th>
+                <th>Name</th>
+                <th>Slug</th>
+                <th>Status</th>
+                <th>Support</th>
+                <th>Created</th>
+              </tr>
+            </thead>
+            <tbody>
+              {orgs.map((org) => (
+                <tr key={org.id}>
+                  <td>
+                    <input type="checkbox" checked={selectedIds.includes(org.id)} onChange={() => toggleSelection(org.id)} />
+                  </td>
+                  <td>{org.displayName || org.name || '-'}</td>
+                  <td>{org.slug || '-'}</td>
+                  <td>
+                    <select className="form-select" value={org.status || 'pending_verification'} onChange={(e: any) => void updateOrgStatus(org.id, e.target.value)}>
+                      {ORG_STATUS_OPTIONS.map((status) => <option key={status} value={status}>{status}</option>)}
+                    </select>
+                  </td>
+                  <td>{org.supportEmail || org.supportPhone || org.contactPhone || '-'}</td>
+                  <td>{org.createdAt ? new Date(org.createdAt).toLocaleDateString() : '-'}</td>
                 </tr>
-              </thead>
-              <tbody>
-                {filtered.map((o) => (
-                  <tr key={o.id}>
-                    <td className="font-semibold">{o.name}</td>
-                    <td className="text-muted font-mono">{o.slug}</td>
-                    <td>
-                      <select
-                        className="form-select"
-                        value={o.status}
-                        onChange={(e) => handleStatusChange(o.id, e.target.value)}
-                        style={{ width: 'auto', minWidth: 120, padding: '4px 30px 4px 10px', fontSize: '12px' }}
-                      >
-                        <option value="active">active</option>
-                        <option value="pending_verification">pending_verification</option>
-                        <option value="suspended">suspended</option>
-                      </select>
-                    </td>
-                    <td className="text-muted">{new Date(o.createdAt).toLocaleDateString()}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+              ))}
+              {!loading && orgs.length === 0 && (
+                <tr><td colSpan={6}>No organisations found</td></tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

@@ -1,141 +1,146 @@
 import { useCallback, useEffect, useState } from 'react';
-import { apiFetch } from '../lib/api';
+import { apiDownload, apiFetch } from '../lib/api';
+import type { Order } from '../types';
 
-interface Order {
-  id: string;
-  orderRef: string;
-  buyerName: string;
-  buyerPhone: string;
-  totalPaisa: number;
-  status: string;
-  createdAt: string;
-}
+const ORDER_STATUS_OPTIONS = [
+  'DRAFT',
+  'CHECKOUT_STARTED',
+  'PAYMENT_PENDING',
+  'PAID',
+  'SHIPMENT_BOOKED',
+  'IN_TRANSIT',
+  'DELIVERED',
+  'COMPLETED',
+  'CANCELLED',
+  'DISPUTE_OPEN',
+  'RETURN_IN_TRANSIT',
+  'REFUNDED',
+];
 
 function formatPaisa(paisa: number): string {
   return `৳${(paisa / 100).toLocaleString('en-BD', { minimumFractionDigits: 2 })}`;
 }
 
-function StatusBadge({ status }: { status: string }) {
-  const cls =
-    status === 'completed' || status === 'delivered'
-      ? 'badge badge-success'
-      : status === 'cancelled' || status === 'failed'
-        ? 'badge badge-danger'
-        : status === 'pending'
-          ? 'badge badge-warning'
-          : 'badge badge-info';
-  return <span className={cls}>{status}</span>;
-}
-
 export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
 
-  const loadOrders = useCallback(() => {
+  const loadOrders = useCallback(async () => {
     setLoading(true);
-    apiFetch<Order[]>('/api/admin/orders')
-      .then(setOrders)
-      .catch(() => setOrders([]))
-      .finally(() => setLoading(false));
-  }, []);
+    setError('');
 
-  useEffect(() => { loadOrders(); }, [loadOrders]);
+    const query = new URLSearchParams();
+    if (search.trim()) query.set('search', search.trim());
+    if (statusFilter) query.set('status', statusFilter);
 
-  const filtered = orders.filter((o) => {
-    const q = search.toLowerCase();
-    const matchesSearch =
-      !q ||
-      o.orderRef.toLowerCase().includes(q) ||
-      o.buyerName.toLowerCase().includes(q) ||
-      o.buyerPhone.includes(q);
-    const matchesStatus = !statusFilter || o.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+    try {
+      const data = await apiFetch<Order[]>(`/api/admin/orders${query.toString() ? `?${query.toString()}` : ''}`);
+      setOrders(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load orders');
+      setOrders([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [search, statusFilter]);
 
-  const statuses = [...new Set(orders.map((o) => o.status))];
+  useEffect(() => {
+    void loadOrders();
+  }, [loadOrders]);
+
+  async function updateOrderStatus(orderId: string, status: string) {
+    try {
+      const updated = await apiFetch<Order>(`/api/admin/orders/${orderId}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status }),
+      });
+      setOrders((prev) => prev.map((o) => o.id === orderId ? { ...o, ...updated } : o));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update order status');
+    }
+  }
+
+  async function holdOrder(orderId: string) {
+    try {
+      await apiFetch(`/api/admin/orders/${orderId}/hold`, { method: 'POST', body: JSON.stringify({ reason: 'Manual review hold' }) });
+      await loadOrders();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to put order on hold');
+    }
+  }
+
+  async function exportCsv() {
+    try {
+      await apiDownload('/api/admin/exports/orders.csv', 'admin-orders.csv');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to export orders');
+    }
+  }
 
   return (
     <div className="page">
       <div className="page-header">
-        <div>
-          <h1 className="page-title">Orders</h1>
-          <p className="page-subtitle">
-            {filtered.length} of {orders.length} order{orders.length !== 1 ? 's' : ''}
-          </p>
-        </div>
-        <div className="page-controls">
-          <div className="search-bar">
-            <input
-              type="text"
-              placeholder="Search by ref, name, phone…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-            <svg viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
-          </div>
-          <select
-            className="form-select"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            style={{ width: 'auto', minWidth: 140 }}
-          >
-            <option value="">All Statuses</option>
-            {statuses.map((s) => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </select>
-          <button
-            className={`btn-icon${loading ? ' spinning' : ''}`}
-            onClick={loadOrders}
-            title="Refresh"
-          >
-            <svg viewBox="0 0 24 24">
-              <polyline points="1 4 1 10 7 10" /><polyline points="23 20 23 14 17 14" />
-              <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15" />
-            </svg>
-          </button>
-        </div>
+        <h1 className="page-title">Orders</h1>
+        <p className="page-subtitle">Operational order control with search, status force-update, and export</p>
+      </div>
+
+      {error && <div className="alert alert-danger">{error}</div>}
+
+      <div className="filter-bar" style={{ marginBottom: 12, display: 'grid', gap: 8, gridTemplateColumns: '2fr 1fr auto auto' }}>
+        <input className="form-input" placeholder="Search by ref, buyer name, phone" value={search} onChange={(e: any) => setSearch(e.target.value)} />
+        <select className="form-select" value={statusFilter} onChange={(e: any) => setStatusFilter(e.target.value)}>
+          <option value="">All status</option>
+          {ORDER_STATUS_OPTIONS.map((status) => <option key={status} value={status}>{status}</option>)}
+        </select>
+        <button className="btn btn-secondary" onClick={() => void loadOrders()} disabled={loading}>Refresh</button>
+        <button className="btn btn-ghost" onClick={() => void exportCsv()}>Export CSV</button>
       </div>
 
       <div className="card">
-        <div className="table-wrap">
-          {loading ? (
-            <div className="page-loading"><div className="spinner" /></div>
-          ) : filtered.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-icon">📋</div>
-              <p>{search || statusFilter ? 'No orders match your filters.' : 'No orders yet.'}</p>
-            </div>
-          ) : (
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Ref</th>
-                  <th>Buyer</th>
-                  <th>Phone</th>
-                  <th>Amount</th>
-                  <th>Status</th>
-                  <th>Date</th>
+        <div className="table-wrapper">
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Ref</th>
+                <th>Buyer</th>
+                <th>Phone</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Force Status</th>
+                <th>Actions</th>
+                <th>Created</th>
+              </tr>
+            </thead>
+            <tbody>
+              {orders.map((order) => (
+                <tr key={order.id}>
+                  <td><code className="code-ref">{order.orderRef}</code></td>
+                  <td>{order.buyerName || '-'}</td>
+                  <td>{order.buyerPhone || '-'}</td>
+                  <td>{formatPaisa(Number(order.totalPaisa))}</td>
+                  <td><span className="badge badge-info">{order.status}</span></td>
+                  <td>
+                    <select className="form-select" value={order.status} onChange={(e: any) => void updateOrderStatus(order.id, e.target.value)}>
+                      {ORDER_STATUS_OPTIONS.map((status) => <option key={status} value={status}>{status}</option>)}
+                    </select>
+                  </td>
+                  <td>
+                    <button className="btn btn-danger btn-sm" onClick={() => void holdOrder(order.id)}>
+                      Risk Hold
+                    </button>
+                  </td>
+                  <td>{new Date(order.createdAt).toLocaleDateString()}</td>
                 </tr>
-              </thead>
-              <tbody>
-                {filtered.map((o) => (
-                  <tr key={o.id}>
-                    <td><code className="font-mono">{o.orderRef}</code></td>
-                    <td className="font-semibold">{o.buyerName}</td>
-                    <td className="text-muted">{o.buyerPhone}</td>
-                    <td className="font-mono">{formatPaisa(o.totalPaisa)}</td>
-                    <td><StatusBadge status={o.status} /></td>
-                    <td className="text-muted">{new Date(o.createdAt).toLocaleDateString()}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+              ))}
+              {!loading && orders.length === 0 && (
+                <tr><td colSpan={8}>No orders found</td></tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
