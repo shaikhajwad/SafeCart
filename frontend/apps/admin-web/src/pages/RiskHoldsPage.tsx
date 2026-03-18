@@ -19,7 +19,7 @@ export default function RiskHoldsPage() {
   const [statusFilter, setStatusFilter] = useState('active');
 
   useEffect(() => {
-    apiFetch<RiskHold[]>('/api/orders/risk-holds')
+    apiFetch<RiskHold[]>('/api/admin/risk-holds')
       .then((data) => {
         setHolds(Array.isArray(data) ? data : []);
         setLoading(false);
@@ -30,8 +30,8 @@ export default function RiskHoldsPage() {
       });
   }, []);
 
-  const filtered = holds.filter((hold) => {
-    if (statusFilter === 'active') return hold.status === 'active';
+  const filtered = holds.filter((hold: RiskHold) => {
+    if (statusFilter === 'active') return hold.status === 'held' || hold.status === 'dispute_frozen';
     if (statusFilter === 'released') return hold.status === 'released';
     return true;
   });
@@ -40,9 +40,9 @@ export default function RiskHoldsPage() {
     if (!confirm('Release this hold?')) return;
 
     try {
-      await apiFetch(`/api/orders/${orderId}/hold/release`, { method: 'POST' });
-      setHolds((prev) =>
-        prev.map((h) => (h.orderId === orderId ? { ...h, status: 'released', releasedAt: new Date().toISOString() } : h)),
+      await apiFetch(`/api/admin/risk-holds/${orderId}/release`, { method: 'POST' });
+      setHolds((prev: RiskHold[]) =>
+        prev.map((h: RiskHold) => (h.orderId === orderId ? { ...h, status: 'released', releasedAt: new Date().toISOString() } : h)),
       );
     } catch (err: any) {
       alert('Failed to release hold: ' + (err.message || 'Unknown error'));
@@ -102,7 +102,7 @@ export default function RiskHoldsPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          {filtered.map((hold) => (
+          {filtered.map((hold: RiskHold) => (
             <div key={hold.id} className="card bg-base-100 shadow">
               <div className="card-body">
                 <div className="flex items-start justify-between mb-4">
@@ -115,7 +115,7 @@ export default function RiskHoldsPage() {
                     <p className="text-sm text-gray-600 font-mono">{hold.orderId}</p>
                   </div>
                   <span
-                    className={`badge ${hold.status === 'active' ? 'badge-warning' : 'badge-success'}`}
+                    className={`badge ${hold.status === 'released' ? 'badge-success' : 'badge-warning'}`}
                   >
                     {hold.status}
                   </span>
@@ -139,7 +139,7 @@ export default function RiskHoldsPage() {
                   )}
                 </div>
 
-                {hold.status === 'active' && (
+                {(hold.status === 'held' || hold.status === 'dispute_frozen') && (
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleReleaseHold(hold.orderId)}

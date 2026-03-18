@@ -7,6 +7,9 @@ import OrdersPage from './pages/OrdersPage';
 import DisputesPage from './pages/DisputesPage';
 import AuditLogsPage from './pages/AuditLogsPage';
 import RiskHoldsPage from './pages/RiskHoldsPage';
+import UsersPage from './pages/UsersPage';
+import OrgsPage from './pages/OrgsPage';
+import RefundsPage from './pages/RefundsPage';
 import Layout from './components/Layout';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -40,6 +43,9 @@ export default function App() {
       <Route path="/verifications" element={<ProtectedRoute><VerificationsPage /></ProtectedRoute>} />
       <Route path="/orders" element={<ProtectedRoute><OrdersPage /></ProtectedRoute>} />
       <Route path="/disputes" element={<ProtectedRoute><DisputesPage /></ProtectedRoute>} />
+      <Route path="/users" element={<ProtectedRoute><UsersPage /></ProtectedRoute>} />
+      <Route path="/orgs" element={<ProtectedRoute><OrgsPage /></ProtectedRoute>} />
+      <Route path="/refunds" element={<ProtectedRoute><RefundsPage /></ProtectedRoute>} />
       <Route path="/audit-logs" element={<ProtectedRoute><AuditLogsPage /></ProtectedRoute>} />
       <Route path="/risk-holds" element={<ProtectedRoute><RiskHoldsPage /></ProtectedRoute>} />
       <Route path="*" element={<Navigate to="/" replace />} />

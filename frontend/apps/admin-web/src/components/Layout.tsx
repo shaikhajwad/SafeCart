@@ -6,6 +6,11 @@ const navItems = [
   { to: '/verifications', label: '✓ Verifications' },
   { to: '/orders', label: '📋 Orders' },
   { to: '/disputes', label: '⚠ Disputes' },
+  { to: '/users', label: '👤 Users' },
+  { to: '/orgs', label: '🏢 Orgs' },
+  { to: '/refunds', label: '💸 Refunds' },
+  { to: '/risk-holds', label: '⛔ Risk Holds' },
+  { to: '/audit-logs', label: '🧾 Audit Logs' },
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {

@@ -76,8 +76,8 @@ export class PaymentsService {
     intent.status = 'processing';
     await this.intentRepo.save(intent);
 
-    const order = await this.ordersService.findById(orderId);
-    if (order.status === OrderStatus.DRAFT) {
+    const orderForStateTransition = await this.ordersService.findById(orderId);
+    if (orderForStateTransition.status === OrderStatus.DRAFT) {
       await this.ordersService.advanceStatus(orderId, OrderStatus.CHECKOUT_STARTED);
     }
     await this.ordersService.advanceStatus(orderId, OrderStatus.PAYMENT_PENDING);

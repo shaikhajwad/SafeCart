@@ -21,8 +21,22 @@ export async function apiFetch<T>(path: string, options?: RequestInit): Promise<
   if (token) headers['Authorization'] = `Bearer ${token}`;
   const res = await fetch(`${BASE_URL}${path}`, { ...options, headers });
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ message: 'Request failed' })) as { message?: string };
-    throw new Error(err.message ?? 'Request failed');
+    const fallbackText = await res.text().catch(() => '');
+    let err: {
+      message?: string;
+      error?: { message?: string } | string;
+    } = { message: 'Request failed' };
+
+    if (fallbackText) {
+      try {
+        err = JSON.parse(fallbackText) as { message?: string; error?: { message?: string } | string };
+      } catch {
+        err = { message: fallbackText };
+      }
+    }
+
+    const nestedMessage = typeof err.error === 'string' ? err.error : err.error?.message;
+    throw new Error((nestedMessage ?? err.message ?? fallbackText) || `Request failed (${res.status})`);
   }
   if (res.status === 204) return undefined as T;
   return res.json() as Promise<T>;

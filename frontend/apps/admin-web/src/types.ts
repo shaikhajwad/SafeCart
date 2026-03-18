@@ -1,17 +1,28 @@
 export interface User {
   id: string;
   phone: string;
+  phoneE164?: string;
+  email?: string;
+  fullName?: string;
   role: string;
+  status?: string;
+  createdAt?: string;
 }
 
 export interface Org {
   id: string;
+  slug?: string;
+  displayName?: string;
   name: string;
+  status?: string;
   contactPhone?: string;
   website?: string;
   tradeLicense?: string;
   tin?: string;
   ubid?: string;
+  supportPhone?: string;
+  supportEmail?: string;
+  createdAt?: string;
 }
 
 export interface Order {
@@ -68,4 +79,16 @@ export interface DashboardStats {
   openDisputes: number;
   totalOrders: number;
   recentOrders?: Order[];
+}
+
+export interface Refund {
+  id: string;
+  orderId: string;
+  paymentIntentId: string;
+  amountPaisa: number;
+  reason: string;
+  status: string;
+  providerRefundId?: string;
+  initiatedByUserId?: string;
+  createdAt: string;
 }

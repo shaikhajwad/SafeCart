@@ -31,7 +31,7 @@ export default function OrdersPage() {
     setHoldLoading(id);
     try {
       await apiFetch(`/api/admin/orders/${id}/hold`, { method: 'POST' });
-      setOrders((prev) => prev.map((o) => o.id === id ? { ...o, status: 'cancelled' } : o));
+      setOrders((prev) => prev.map((o) => o.id === id ? { ...o, status: 'CANCELLED' } : o));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to hold order');
     } finally {
@@ -103,7 +103,7 @@ export default function OrdersPage() {
                     <td><span className={`badge badge-${order.status}`}>{order.status}</span></td>
                     <td>{new Date(order.createdAt).toLocaleDateString()}</td>
                     <td>
-                      {order.status !== 'cancelled' && (
+                      {order.status !== 'CANCELLED' && (
                         <button
                           className="btn btn-danger btn-xs"
                           onClick={() => void handleHold(order.id)}

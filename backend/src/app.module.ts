@@ -34,6 +34,7 @@ import { PaymentReconciliationProcessor } from './jobs/payment-reconciliation.pr
 import { Shipment } from './modules/logistics/entities/shipment.entity';
 import { Order } from './modules/orders/entities/order.entity';
 import { PaymentIntent } from './modules/payments/entities/payment-intent.entity';
+import { PaymentTxn } from './modules/payments/entities/payment-txn.entity';
 
 import Redis from 'ioredis';
 
@@ -58,7 +59,7 @@ import Redis from 'ioredis';
       }),
       inject: [ConfigService],
     }),
-    TypeOrmModule.forFeature([Shipment, Order, PaymentIntent]),
+    TypeOrmModule.forFeature([Shipment, Order, PaymentIntent, PaymentTxn]),
     ThrottlerModule.forRoot([{ ttl: 60, limit: 100 }]),
     ScheduleModule.forRoot(),
     // Feature modules

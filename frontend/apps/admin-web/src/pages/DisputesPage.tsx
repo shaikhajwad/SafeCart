@@ -3,7 +3,7 @@ import { apiFetch } from '../lib/api';
 import type { Dispute } from '../types';
 
 interface ResolveDisputeDto {
-  resolution: 'resolved' | 'rejected';
+  resolution: 'resolved_seller' | 'resolved_buyer' | 'closed';
   notes?: string;
 }
 
@@ -31,12 +31,12 @@ export default function DisputesPage() {
 
   useEffect(() => { void load(); }, []);
 
-  async function handleResolve(id: string, resolution: 'resolved' | 'rejected') {
+  async function handleResolve(id: string, resolution: 'resolved_seller' | 'resolved_buyer' | 'closed') {
     setActionLoading(id + '-' + resolution);
     setActionError('');
     try {
       const dto: ResolveDisputeDto = { resolution, notes: notes.trim() || undefined };
-      await apiFetch(`/api/disputes/${id}/resolve`, {
+      await apiFetch(`/api/admin/disputes/${id}/resolve`, {
         method: 'PATCH',
         body: JSON.stringify(dto),
       });
@@ -101,17 +101,24 @@ export default function DisputesPage() {
                   <div className="action-buttons">
                     <button
                       className="btn btn-success"
-                      onClick={() => void handleResolve(dispute.id, 'resolved')}
+                      onClick={() => void handleResolve(dispute.id, 'resolved_buyer')}
                       disabled={actionLoading !== null}
                     >
-                      {actionLoading === dispute.id + '-resolved' ? 'Resolving…' : 'Mark Resolved'}
+                      {actionLoading === dispute.id + '-resolved_buyer' ? 'Resolving…' : 'Resolve For Buyer'}
+                    </button>
+                    <button
+                      className="btn btn-warning"
+                      onClick={() => void handleResolve(dispute.id, 'resolved_seller')}
+                      disabled={actionLoading !== null}
+                    >
+                      {actionLoading === dispute.id + '-resolved_seller' ? 'Resolving…' : 'Resolve For Seller'}
                     </button>
                     <button
                       className="btn btn-danger"
-                      onClick={() => void handleResolve(dispute.id, 'rejected')}
+                      onClick={() => void handleResolve(dispute.id, 'closed')}
                       disabled={actionLoading !== null}
                     >
-                      {actionLoading === dispute.id + '-rejected' ? 'Rejecting…' : 'Reject'}
+                      {actionLoading === dispute.id + '-closed' ? 'Closing…' : 'Close'}
                     </button>
                     <button
                       className="btn btn-ghost"

@@ -1,4 +1,5 @@
 import { Injectable, Inject } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Redis } from 'ioredis';
 import * as bcrypt from 'bcrypt';
 
@@ -9,7 +10,10 @@ const BCRYPT_ROUNDS = 10;
 
 @Injectable()
 export class OtpService {
-  constructor(@Inject('REDIS_CLIENT') private readonly redis: Redis) {}
+  constructor(
+    @Inject('REDIS_CLIENT') private readonly redis: Redis,
+    private readonly configService: ConfigService,
+  ) {}
 
   private otpKey(phone: string): string {
     return `otp:${phone}`;
@@ -20,6 +24,13 @@ export class OtpService {
   }
 
   async checkRateLimit(phone: string): Promise<{ allowed: boolean; retryAfter: number }> {
+    const nodeEnv = (this.configService.get<string>('NODE_ENV') ?? '').toLowerCase();
+    const disableOtpRateLimit = (this.configService.get<string>('DISABLE_OTP_RATE_LIMIT') ?? '').toLowerCase() === 'true';
+
+    if (nodeEnv === 'development' || nodeEnv === 'local' || disableOtpRateLimit) {
+      return { allowed: true, retryAfter: 0 };
+    }
+
     const key = this.rateKey(phone);
     const count = await this.redis.incr(key);
     if (count === 1) {

@@ -42,7 +42,7 @@ export class PaymentReconciliationProcessor {
         
         if (intent.provider === 'sslcommerz' && intent.rawIpn) {
           try {
-            const isValid = await this.sslcommerzAdapter.validateIPN(intent.rawIpn);
+            const isValid = await this.sslcommerzAdapter.validateIPN(intent.rawIpn as Record<string, string>);
             if (isValid) {
               updatedStatus = 'succeeded';
               this.logger.log(`[SSLCOMMERZ] Payment ${intent.id} validated successfully`);

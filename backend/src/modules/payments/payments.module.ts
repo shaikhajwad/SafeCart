@@ -18,6 +18,6 @@ import { OrdersModule } from '../orders/orders.module';
   ],
   controllers: [PaymentsController],
   providers: [PaymentsService, EscrowService, SslcommerzAdapter, BkashAdapter],
-  exports: [PaymentsService, EscrowService],
+  exports: [PaymentsService, EscrowService, SslcommerzAdapter, BkashAdapter],
 })
 export class PaymentsModule {}
