@@ -161,6 +161,7 @@ export default function Home() {
             <a href="#how-it-works" className="hover:text-indigo-600 transition-colors">How It Works</a>
             <a href="#for-buyers" className="hover:text-indigo-600 transition-colors">For Buyers</a>
             <a href="#for-sellers" className="hover:text-indigo-600 transition-colors">For Sellers</a>
+            <Link href="/pricing" className="hover:text-indigo-600 transition-colors">Pricing</Link>
           </nav>
 
           {/* CTAs */}
@@ -401,6 +402,7 @@ export default function Home() {
                   <li><a href="#how-it-works" className="hover:text-white transition-colors">How It Works</a></li>
                   <li><a href="#for-buyers" className="hover:text-white transition-colors">For Buyers</a></li>
                   <li><a href="#for-sellers" className="hover:text-white transition-colors">For Sellers</a></li>
+                  <li><Link href="/pricing" className="hover:text-white transition-colors">Pricing</Link></li>
                 </ul>
               </div>
               <div>
