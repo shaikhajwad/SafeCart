@@ -56,13 +56,16 @@ export class PaymentsService {
     });
     await this.intentRepo.save(intent);
 
-    const callbackBaseUrl = this.configService.get<string>('APP_BASE_URL') ?? 'http://localhost:3000';
+    const appBaseUrl = this.configService.get<string>('APP_BASE_URL') ?? 'http://localhost:3000';
+    const checkoutWebBaseUrl = this.configService.get<string>('CHECKOUT_WEB_BASE_URL') ?? 'http://localhost:3001';
     let payUrl: string;
 
     if (provider === 'sslcommerz') {
-      payUrl = await this.sslcommerzAdapter.createPaymentSession(order, callbackBaseUrl);
+      const ipnUrl = `${appBaseUrl}/api/webhooks/payments/sslcommerz/ipn`;
+      const frontendOrderUrl = `${checkoutWebBaseUrl}/orders/${orderId}`;
+      payUrl = await this.sslcommerzAdapter.createPaymentSession(order, ipnUrl, frontendOrderUrl);
     } else if (provider === 'bkash') {
-      const { bkashUrl, paymentId } = await this.bkashAdapter.createPayment(order, callbackBaseUrl);
+      const { bkashUrl, paymentId } = await this.bkashAdapter.createPayment(order, appBaseUrl);
       intent.providerRef = paymentId;
       payUrl = bkashUrl;
     } else {
@@ -81,6 +84,18 @@ export class PaymentsService {
     }
 
     return result;
+  }
+
+  /** Public payment initiation for buyers who authenticate via access_code. */
+  async initiateBuyerPayment(
+    orderId: string,
+    accessCode: string,
+    provider: string,
+    idempotencyKey?: string,
+  ): Promise<{ payUrl: string; paymentIntentId: string }> {
+    // Validate access_code before initiating — throws ForbiddenException if invalid
+    await this.ordersService.findByIdWithAccess(orderId, accessCode);
+    return this.initiatePayment(orderId, provider, idempotencyKey);
   }
 
   async handleSslcommerzIPN(payload: Record<string, string>): Promise<void> {

@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import PayButton from './PayButton';
 
 interface StatusHistoryEntry {
   id: string;
@@ -114,10 +115,10 @@ export default async function OrderPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ access_code?: string }>;
+  searchParams: Promise<{ access_code?: string; payment?: string }>;
 }) {
   const { id } = await params;
-  const { access_code: accessCode } = await searchParams;
+  const { access_code: accessCode, payment: paymentResult } = await searchParams;
 
   const order = await getOrder(id, accessCode ?? null);
 
@@ -138,6 +139,23 @@ export default async function OrderPage({
           <h1 className="text-lg font-bold text-gray-900">SafeCart</h1>
           <p className="text-xs text-gray-400 mt-0.5">Order Confirmation &amp; Tracking</p>
         </div>
+
+        {/* Payment result banner */}
+        {paymentResult === 'success' && (
+          <div role="alert" className="mb-4 rounded-xl bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-700 font-medium text-center">
+            ✅ Payment received! Your order is being processed.
+          </div>
+        )}
+        {paymentResult === 'failed' && (
+          <div role="alert" className="mb-4 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-600 font-medium text-center">
+            ❌ Payment failed. Please try again below.
+          </div>
+        )}
+        {paymentResult === 'cancelled' && (
+          <div role="alert" className="mb-4 rounded-xl bg-yellow-50 border border-yellow-200 px-4 py-3 text-sm text-yellow-700 font-medium text-center">
+            ⚠️ Payment was cancelled. You can try again below.
+          </div>
+        )}
 
         {/* Status card */}
         <div className="bg-white rounded-2xl shadow p-6 mb-4">
@@ -187,6 +205,17 @@ export default async function OrderPage({
             Placed on {formatDate(order.createdAt)}
           </p>
         </div>
+
+        {/* Pay Now — shown when order is awaiting payment and buyer has access_code */}
+        {accessCode && (order.status === 'CHECKOUT_STARTED' || order.status === 'PAYMENT_PENDING') && (
+          <div className="bg-white rounded-2xl shadow p-6 mb-4">
+            <h2 className="text-sm font-semibold text-gray-700 mb-4">Complete Your Payment</h2>
+            <p className="text-xs text-gray-500 mb-4">
+              Your order is reserved. Complete payment securely via SSLCommerz to confirm it.
+            </p>
+            <PayButton orderId={order.id} accessCode={accessCode} />
+          </div>
+        )}
 
         {/* Status timeline */}
         <div className="bg-white rounded-2xl shadow p-6 mb-4">

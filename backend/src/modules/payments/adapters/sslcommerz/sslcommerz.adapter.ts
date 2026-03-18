@@ -19,7 +19,11 @@ export class SslcommerzAdapter {
   constructor(private configService: ConfigService) {
     this.storeId = configService.get<string>('SSLCOMMERZ_STORE_ID') ?? '';
     this.storePassword = configService.get<string>('SSLCOMMERZ_STORE_PASSWORD') ?? '';
-    this.isSandbox = configService.get<string>('NODE_ENV') !== 'production';
+    // Explicit sandbox flag takes precedence; fall back to NODE_ENV check
+    const sandboxFlag = configService.get<string>('SSLCOMMERZ_IS_SANDBOX');
+    this.isSandbox = sandboxFlag !== undefined
+      ? sandboxFlag !== 'false'
+      : configService.get<string>('NODE_ENV') !== 'production';
   }
 
   private get baseUrl(): string {
@@ -28,20 +32,26 @@ export class SslcommerzAdapter {
       : 'https://securepay.sslcommerz.com';
   }
 
-  async createPaymentSession(order: Order, callbackBaseUrl: string): Promise<string> {
+  /**
+   * Create a payment session.
+   * @param order         The order to pay for.
+   * @param ipnUrl        Backend IPN / webhook URL (must be publicly reachable).
+   * @param frontendOrderUrl  Frontend URL the buyer is redirected to after success/fail/cancel.
+   */
+  async createPaymentSession(order: Order, ipnUrl: string, frontendOrderUrl: string): Promise<string> {
     const payload = {
       store_id: this.storeId,
       store_passwd: this.storePassword,
       total_amount: (Number(order.totalPaisa) / 100).toFixed(2),
       currency: 'BDT',
       tran_id: order.id,
-      success_url: `${callbackBaseUrl}/api/webhooks/payments/sslcommerz/ipn`,
-      fail_url: `${callbackBaseUrl}/api/webhooks/payments/sslcommerz/ipn`,
-      cancel_url: `${callbackBaseUrl}/api/webhooks/payments/sslcommerz/ipn`,
-      ipn_url: `${callbackBaseUrl}/api/webhooks/payments/sslcommerz/ipn`,
+      success_url: `${frontendOrderUrl}?payment=success`,
+      fail_url: `${frontendOrderUrl}?payment=failed`,
+      cancel_url: `${frontendOrderUrl}?payment=cancelled`,
+      ipn_url: ipnUrl,
       cus_name: order.buyerName,
       cus_phone: order.buyerPhone,
-      cus_email: 'buyer@safecart.com',
+      cus_email: `buyer-${order.id.slice(0, 8)}@safecart.invalid`,
       cus_add1: order.addressLine1,
       cus_city: order.district,
       cus_country: 'Bangladesh',
@@ -50,6 +60,8 @@ export class SslcommerzAdapter {
       product_category: 'General',
       product_profile: 'general',
     };
+
+    this.logger.debug(`SSLCommerz createPaymentSession sandbox=${this.isSandbox} tran_id=${order.id}`);
 
     const response = await axios.post<SSLCommerzPaymentSession>(
       `${this.baseUrl}/gwprocess/v4/api.php`,
