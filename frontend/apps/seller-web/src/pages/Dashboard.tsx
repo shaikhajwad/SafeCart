@@ -51,18 +51,22 @@ export default function Dashboard() {
 
       <div className="stats-grid">
         <div className="stat-card">
+          <div className="stat-icon">📋</div>
           <div className="stat-value">{totalOrders}</div>
           <div className="stat-label">Total Orders</div>
         </div>
         <div className="stat-card stat-card-warning">
+          <div className="stat-icon">⏳</div>
           <div className="stat-value">{pendingOrders}</div>
           <div className="stat-label">Pending</div>
         </div>
         <div className="stat-card stat-card-success">
+          <div className="stat-icon">✅</div>
           <div className="stat-value">{completedOrders}</div>
           <div className="stat-label">Completed</div>
         </div>
         <div className="stat-card stat-card-info">
+          <div className="stat-icon">💰</div>
           <div className="stat-value">
             {formatBDT(orderList.reduce((s, o) => s + o.totalPaisa, 0))}
           </div>

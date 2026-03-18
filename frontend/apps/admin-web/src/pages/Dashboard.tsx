@@ -42,18 +42,22 @@ export default function Dashboard() {
         <>
           <div className="stat-grid">
             <div className="stat-card">
+              <div className="stat-icon">🏢</div>
               <div className="stat-label">Total Orgs</div>
               <div className="stat-value">{stats.totalOrgs}</div>
             </div>
             <div className="stat-card stat-card-warning" onClick={() => navigate('/verifications')} style={{ cursor: 'pointer' }}>
+              <div className="stat-icon">⏳</div>
               <div className="stat-label">Pending Verifications</div>
               <div className="stat-value">{stats.pendingVerifications}</div>
             </div>
             <div className="stat-card stat-card-danger" onClick={() => navigate('/disputes')} style={{ cursor: 'pointer' }}>
+              <div className="stat-icon">⚠️</div>
               <div className="stat-label">Open Disputes</div>
               <div className="stat-value">{stats.openDisputes}</div>
             </div>
-            <div className="stat-card" onClick={() => navigate('/orders')} style={{ cursor: 'pointer' }}>
+            <div className="stat-card stat-card-info" onClick={() => navigate('/orders')} style={{ cursor: 'pointer' }}>
+              <div className="stat-icon">📋</div>
               <div className="stat-label">Total Orders</div>
               <div className="stat-value">{stats.totalOrders}</div>
             </div>
